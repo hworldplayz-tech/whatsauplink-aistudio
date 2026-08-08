@@ -1,0 +1,76 @@
+
+import { getCategories, getCountries, seedInitialData, getLayoutSettings, getReports, getPaginatedGroups } from './actions';
+import { getModerationSettings } from '@/lib/admin-settings';
+import { getAdSettings } from '@/lib/ad-actions';
+import { notFound } from 'next/navigation';
+import { AdminPageClient } from './admin-page-client';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
+import { mapDocToGroupLink } from '@/lib/data';
+
+
+// Helper function to initialize Firebase on the server
+function getFirestoreInstance() {
+    if (!getApps().length) {
+        initializeApp(firebaseConfig);
+    }
+    return getFirestore(getApp());
+}
+
+
+export default async function AdminPage() {
+  // Setting revalidate to 0 tells Next.js not to cache this page,
+  // so data is always fresh on navigation.
+  // This is an alternative to calling revalidatePath from every action.
+  // export const revalidate = 0; 
+
+  try {
+    await seedInitialData();
+    const db = getFirestoreInstance();
+    
+    // Fetch all data in parallel for performance
+    const [
+        moderationSettings, 
+        categories, 
+        countries, 
+        layoutSettings, 
+        reports,
+        paginatedData,
+        allGroupsSnapshot,
+        adSettings
+    ] = await Promise.all([
+      getModerationSettings(),
+      getCategories(),
+      getCountries(),
+      getLayoutSettings(),
+      getReports(),
+      getPaginatedGroups(1, 50), // Fetch initial paginated groups for the table
+      getDocs(query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'))), // Fetch ALL groups for stats
+      getAdSettings(),
+    ]);
+
+    const { groups, totalPages, totalGroups } = paginatedData;
+    const allGroupsForStats = allGroupsSnapshot.docs.map(mapDocToGroupLink);
+
+
+    return (
+      <AdminPageClient
+        initialGroups={groups}
+        allGroupsForStats={allGroupsForStats}
+        initialTotalPages={totalPages}
+        initialTotalGroups={totalGroups}
+        initialModerationSettings={moderationSettings}
+        initialCategories={categories}
+        initialCountries={countries}
+        initialLayoutSettings={layoutSettings}
+        initialReports={reports}
+        initialAdSettings={adSettings}
+      />
+    );
+  } catch (error) {
+    console.error('Failed to load admin data:', error);
+    return notFound();
+  }
+}

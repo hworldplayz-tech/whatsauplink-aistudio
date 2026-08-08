@@ -1,0 +1,22 @@
+/**
+ * @description This ruleset provides a basic secure starting point for a Firestore database.
+ * It enforces that all users must be signed in to access any data.
+ * @dataStructure The database has no defined structure. All paths require authentication.
+ * @keySecurityDecisions All read and write operations require a valid authentication token.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Function to check if the user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Secure all paths by default, requiring authentication
+    match /{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}
