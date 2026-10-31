@@ -19,6 +19,11 @@
 # Vercel
 .vercel
 
+# Cloudflare & OpenNext
+.open-next/
+.wrangler/
+
+
 #-*- Visual Studio Code -*-
 .vscode/
 
