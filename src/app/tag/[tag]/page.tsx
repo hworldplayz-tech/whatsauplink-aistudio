@@ -1,5 +1,6 @@
 
 import { HomePage } from '@/components/groups/home-page';
+import { Suspense } from 'react';
 import { getModerationSettings } from '@/lib/admin-settings';
 import { getCategories, getCountries, getLayoutSettings } from '@/app/admin/actions';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -57,33 +58,37 @@ export default async function TagPage({ params }: Props) {
   ]);
 
   const db = getFirestoreInstance();
-  
-  // Use 'array-contains' for the primary tag filter. This is more efficient.
-  const groupsQuery = query(
-    collection(db, 'groups'), 
-    where('tags', 'array-contains', firstTag)
-  );
+  let allGroups: any[] = [];
+  try {
+    const groupsQuery = query(
+      collection(db, 'groups'), 
+      where('tags', 'array-contains', firstTag)
+    );
 
-  const groupSnapshot = await getDocs(groupsQuery);
-  
-  // Filter for any additional tags in memory.
-  const allGroups = groupSnapshot.docs.map(g => {
-    const group = mapDocToGroupLink(g);
-    group.showClicks = settings.showClicks; // Ensure global setting is applied
-    return group;
-  }).filter(group => {
-    // If there's more than one tag, ensure the group has all of them.
-    if (tags.length > 1) {
-      const groupTagsLower = group.tags.map(t => t.toLowerCase());
-      return tags.every(t => groupTagsLower.includes(t));
-    }
-    return true; // If only one tag, it's already filtered by the query.
-  }).sort((a, b) => {
-    // Sort manually after fetching
-    const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-    const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-    return dateB - dateA;
-  });
+    const groupSnapshot = await getDocs(groupsQuery);
+    
+    // Filter for any additional tags in memory.
+    allGroups = groupSnapshot.docs.map(g => {
+      const group = mapDocToGroupLink(g);
+      group.showClicks = settings.showClicks; // Ensure global setting is applied
+      return group;
+    }).filter(group => {
+      // If there's more than one tag, ensure the group has all of them.
+      if (tags.length > 1) {
+        const groupTagsLower = group.tags.map(t => t.toLowerCase());
+        return tags.every(t => groupTagsLower.includes(t));
+      }
+      return true; // If only one tag, it's already filtered by the query.
+    }).sort((a, b) => {
+      // Sort manually after fetching
+      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (err) {
+    console.error('Error fetching tag groups:', err);
+    allGroups = [];
+  }
 
   const tagTitle = tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' & ');
   const combinedSettings = { ...settings, layout: layoutSettings };
@@ -100,15 +105,17 @@ export default async function TagPage({ params }: Props) {
 
 
   return (
-    <HomePage 
-      initialSettings={combinedSettings}
-      allGroups={allGroups}
-      initialCategories={categories}
-      initialCountries={countries}
-      pageTitle={`Groups Tagged '${tagTitle}'`}
-      breadcrumbItems={breadcrumbItems}
-      seoTitle={seoTitle}
-      seoContent={seoContent}
-    />
+    <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>
+      <HomePage 
+        initialSettings={combinedSettings}
+        allGroups={allGroups}
+        initialCategories={categories}
+        initialCountries={countries}
+        pageTitle={`Groups Tagged '${tagTitle}'`}
+        breadcrumbItems={breadcrumbItems}
+        seoTitle={seoTitle}
+        seoContent={seoContent}
+      />
+    </Suspense>
   );
 }

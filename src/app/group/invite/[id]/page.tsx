@@ -10,7 +10,7 @@ import { getAdSettings } from '@/lib/ad-actions';
 import type { Metadata } from 'next';
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }> | { id: string };
 };
 
 function getDb() {
@@ -21,56 +21,74 @@ function getDb() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const db = getDb();
-  const group = await getGroupById(db, params.id);
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const db = getDb();
+    const group = await getGroupById(db, resolvedParams.id);
 
-  if (!group) {
+    if (!group) {
+      return {
+        title: 'Group Link Not Found | WhatsUpLink',
+        description: 'The WhatsApp group link you are looking for could not be found.',
+      };
+    }
+
+    const title = `Join ${group.title} WhatsApp Group Link | WhatsUpLink`;
+    const description = `Find and join the ${group.title} WhatsApp group link. ${group.description?.substring(0, 120)}...`;
+
     return {
-      title: 'Group Link Not Found | WhatsUpLink',
-      description: 'The WhatsApp group link you are looking for could not be found.',
+      title: title,
+      description: description,
+      openGraph: {
+        title: title,
+        description: group.description,
+        images: group.imageUrl ? [{ url: group.imageUrl, width: 512, height: 512 }] : [],
+        type: 'website',
+      },
+    };
+  } catch (e) {
+    return {
+      title: 'WhatsApp Group Link | WhatsUpLink',
+      description: 'Join active WhatsApp group links.',
     };
   }
-
-  const title = `Join ${group.title} WhatsApp Group Link | WhatsUpLink`;
-  const description = `Find and join the ${group.title} WhatsApp group link. ${group.description.substring(0, 120)}... Discover more groups for ${group.category} and from ${group.country}.`;
-
-  return {
-    title: title,
-    description: description,
-    openGraph: {
-      title: title,
-      description: group.description,
-      images: [
-        {
-          url: group.imageUrl,
-          width: 512,
-          height: 512,
-          alt: `Logo for ${group.title} WhatsApp Group`,
-        },
-      ],
-      type: 'website',
-    },
-  };
 }
 
-
 export default async function GroupDetailPage({ params }: Props) {
+  const resolvedParams = await Promise.resolve(params);
   const db = getDb();
   
-  // Fetch group first to get its category for related groups query
-  const group = await getGroupById(db, params.id);
+  let group = null;
+  try {
+    group = await getGroupById(db, resolvedParams.id);
+  } catch (e) {
+    console.error('Error fetching group by ID:', e);
+  }
   
   if (!group) {
     notFound();
   }
 
-  // Now fetch remaining data in parallel for better performance
-  const [relatedGroups, categories, countries, adSettings] = await Promise.all([
-    getRelatedGroups(db, group),
-    getCategories(),
-    getCountries(),
-    getAdSettings(),
-  ]);
+  let relatedGroups = [];
+  let categories = [];
+  let countries = [];
+  let adSettings = { globalEnabled: false, slots: {} };
+
+  try {
+    const results = await Promise.allSettled([
+      getRelatedGroups(db, group),
+      getCategories(),
+      getCountries(),
+      getAdSettings(),
+    ]);
+
+    relatedGroups = results[0].status === 'fulfilled' ? results[0].value : [];
+    categories = results[1].status === 'fulfilled' ? results[1].value : [];
+    countries = results[2].status === 'fulfilled' ? results[2].value : [];
+    adSettings = results[3].status === 'fulfilled' ? results[3].value : { globalEnabled: false, slots: {} };
+  } catch (err) {
+    console.error('Failed to load related data for group:', err);
+  }
 
   return (
     <GroupDetailView 
@@ -78,7 +96,7 @@ export default async function GroupDetailPage({ params }: Props) {
       relatedGroups={relatedGroups} 
       categories={categories}
       countries={countries}
-      adSettings={adSettings}
+      adSettings={adSettings as any}
     />
   );
 }

@@ -183,21 +183,33 @@ export async function getPaginatedGroups(
 // ----- Categories & Countries Management Actions -----
 
 export async function getCategories(): Promise<Category[]> {
-    const db = getFirestoreInstance();
-    const catCollection = collection(db, 'categories');
-    const q = query(catCollection, orderBy('label'));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(mapDocToCategory);
+    try {
+        const db = getFirestoreInstance();
+        const catCollection = collection(db, 'categories');
+        const q = query(catCollection, orderBy('label'));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return DEFAULT_CATEGORIES;
+        const mapped = snapshot.docs.map(mapDocToCategory);
+        return mapped.length > 0 ? mapped : DEFAULT_CATEGORIES;
+    } catch (error) {
+        console.error('Error fetching categories from Firestore, using defaults:', error);
+        return DEFAULT_CATEGORIES;
+    }
 }
 
 export async function getCountries(): Promise<Country[]> {
-    const db = getFirestoreInstance();
-    const countryCollection = collection(db, 'countries');
-    const q = query(countryCollection, orderBy('label'));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(mapDocToCountry);
+    try {
+        const db = getFirestoreInstance();
+        const countryCollection = collection(db, 'countries');
+        const q = query(countryCollection, orderBy('label'));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return DEFAULT_COUNTRIES;
+        const mapped = snapshot.docs.map(mapDocToCountry);
+        return mapped.length > 0 ? mapped : DEFAULT_COUNTRIES;
+    } catch (error) {
+        console.error('Error fetching countries from Firestore, using defaults:', error);
+        return DEFAULT_COUNTRIES;
+    }
 }
 
 const taxonomySchema = z.object({
@@ -275,41 +287,45 @@ export async function deleteTaxonomyItem(type: 'category' | 'country', value: st
 
 // One-time seeding function
 export async function seedInitialData() {
-    const db = getFirestoreInstance();
-    const categoriesRef = collection(db, 'categories');
-    const countriesRef = collection(db, 'countries');
+    try {
+        const db = getFirestoreInstance();
+        const categoriesRef = collection(db, 'categories');
+        const countriesRef = collection(db, 'countries');
 
-    const catSnapshot = await getDocs(query(categoriesRef, limit(1)));
-    const countrySnapshot = await getDocs(query(countriesRef, limit(1)));
+        const catSnapshot = await getDocs(query(categoriesRef, limit(1)));
+        const countrySnapshot = await getDocs(query(countriesRef, limit(1)));
 
-    const batch = writeBatch(db);
-    let writes = 0;
+        const batch = writeBatch(db);
+        let writes = 0;
 
-    if (catSnapshot.empty) {
-        console.log('Seeding initial categories...');
-        DEFAULT_CATEGORIES.forEach(cat => {
-            if (cat.value !== 'all') { // Do not write 'all' to db
-                const docRef = doc(db, 'categories', cat.value);
-                batch.set(docRef, { label: cat.label, value: cat.value });
-                writes++;
-            }
-        });
-    }
+        if (catSnapshot.empty) {
+            console.log('Seeding initial categories...');
+            DEFAULT_CATEGORIES.forEach(cat => {
+                if (cat.value !== 'all') { // Do not write 'all' to db
+                    const docRef = doc(db, 'categories', cat.value);
+                    batch.set(docRef, { label: cat.label, value: cat.value });
+                    writes++;
+                }
+            });
+        }
 
-    if (countrySnapshot.empty) {
-        console.log('Seeding initial countries...');
-        DEFAULT_COUNTRIES.forEach(country => {
-             if (country.value !== 'all') { // Do not write 'all' to db
-                const docRef = doc(db, 'countries', country.value);
-                batch.set(docRef, { label: country.label, value: country.value });
-                writes++;
-             }
-        });
-    }
+        if (countrySnapshot.empty) {
+            console.log('Seeding initial countries...');
+            DEFAULT_COUNTRIES.forEach(country => {
+                 if (country.value !== 'all') { // Do not write 'all' to db
+                    const docRef = doc(db, 'countries', country.value);
+                    batch.set(docRef, { label: country.label, value: country.value });
+                    writes++;
+                 }
+            });
+        }
 
-    if (writes > 0) {
-        await batch.commit();
-        console.log('Initial data seeding complete.');
+        if (writes > 0) {
+            await batch.commit();
+            console.log('Initial data seeding complete.');
+        }
+    } catch (error) {
+        console.warn('Skipping initial data seeding (read/write not permitted or failed):', error);
     }
 }
 

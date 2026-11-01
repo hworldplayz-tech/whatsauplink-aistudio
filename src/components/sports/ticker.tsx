@@ -3,7 +3,14 @@ import { getTickerData, type TickerItem, type Match, type NewsArticle } from '@/
 import { TickerClient } from './ticker-client';
 
 export async function Ticker() {
-  const items = await getTickerData();
+  let items: TickerItem[] = [];
+  try {
+    items = await getTickerData();
+  } catch (err) {
+    console.error('Ticker fetch error:', err);
+    items = [];
+  }
+
   const tickerType = items[0]?.type === 'sport' ? 'LIVE' : 'NEWS';
 
   if (items.length === 0) {

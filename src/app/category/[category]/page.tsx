@@ -1,5 +1,6 @@
 
 import { HomePage } from '@/components/groups/home-page';
+import { Suspense } from 'react';
 import { getModerationSettings } from '@/lib/admin-settings';
 import { getCategories, getCountries, getLayoutSettings } from '@/app/admin/actions';
 import { getAdSettings } from '@/lib/ad-actions';
@@ -56,23 +57,29 @@ export default async function CategoryPage({ params }: Props) {
     getAdSettings(),
   ]);
 
-  const db = getFirestoreInstance();
-  // Remove orderby from query to avoid needing a composite index
-  const groupsQuery = query(
-    collection(db, 'groups'), 
-    where('category', '==', category)
-  );
-  const groupSnapshot = await getDocs(groupsQuery);
-  const allGroups = groupSnapshot.docs.map(g => {
-    const group = mapDocToGroupLink(g);
-    group.showClicks = settings.showClicks; // Ensure global setting is applied
-    return group;
-  }).sort((a, b) => {
-    // Sort manually after fetching
-    const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-    const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-    return dateB - dateA;
-  });
+  let allGroups: any[] = [];
+  try {
+    const db = getFirestoreInstance();
+    // Remove orderby from query to avoid needing a composite index
+    const groupsQuery = query(
+      collection(db, 'groups'), 
+      where('category', '==', category)
+    );
+    const groupSnapshot = await getDocs(groupsQuery);
+    allGroups = groupSnapshot.docs.map(g => {
+      const group = mapDocToGroupLink(g);
+      group.showClicks = settings.showClicks; // Ensure global setting is applied
+      return group;
+    }).sort((a, b) => {
+      // Sort manually after fetching
+      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (err) {
+    console.error('Error fetching category groups:', err);
+    allGroups = [];
+  }
 
   const categoryLabel = categories.find(c => c.value === category)?.label || category;
   const combinedSettings = { ...settings, layout: layoutSettings };
@@ -88,17 +95,19 @@ export default async function CategoryPage({ params }: Props) {
 
 
   return (
-    <HomePage 
-      initialSettings={combinedSettings}
-      allGroups={allGroups}
-      initialCategories={categories}
-      initialCountries={countries}
-      pageTitle={`Groups in '${categoryLabel}'`}
-      breadcrumbItems={breadcrumbItems}
-      seoTitle={seoTitle}
-      seoContent={seoContent}
-      adSettings={adSettings}
-    />
+    <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>
+      <HomePage 
+        initialSettings={combinedSettings}
+        allGroups={allGroups}
+        initialCategories={categories}
+        initialCountries={countries}
+        pageTitle={`Groups in '${categoryLabel}'`}
+        breadcrumbItems={breadcrumbItems}
+        seoTitle={seoTitle}
+        seoContent={seoContent}
+        adSettings={adSettings}
+      />
+    </Suspense>
   );
 }
 

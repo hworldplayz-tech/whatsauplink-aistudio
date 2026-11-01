@@ -13,7 +13,37 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Secure all paths by default, requiring authentication
+    // Public WhatsApp Groups: anyone can view groups, submit new groups
+    match /groups/{groupId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isSignedIn();
+    }
+
+    // Taxonomies (categories & countries): publicly readable
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /countries/{countryId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Site settings (moderation, layout, ads): publicly readable so the site can render
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Reports: anyone can submit a report; only admin can view/manage
+    match /reports/{reportId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    // Secure all other paths by default, requiring authentication
     match /{document=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn();

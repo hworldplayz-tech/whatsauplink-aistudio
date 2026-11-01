@@ -1,5 +1,6 @@
 
 import { HomePage } from '@/components/groups/home-page';
+import { Suspense } from 'react';
 import { getModerationSettings } from '@/lib/admin-settings';
 import { getCategories, getCountries, getLayoutSettings } from '@/app/admin/actions';
 import { getAdSettings } from '@/lib/ad-actions';
@@ -55,23 +56,29 @@ export default async function CountryPage({ params }: Props) {
     getAdSettings(),
   ]);
 
-  const db = getFirestoreInstance();
-  // Remove orderby from query to avoid needing a composite index
-  const groupsQuery = query(
-    collection(db, 'groups'), 
-    where('country', '==', country)
-  );
-  const groupSnapshot = await getDocs(groupsQuery);
-  const allGroups = groupSnapshot.docs.map(g => {
-    const group = mapDocToGroupLink(g);
-    group.showClicks = settings.showClicks; // Ensure global setting is applied
-    return group;
-  }).sort((a, b) => {
-    // Sort manually after fetching
-    const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-    const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-    return dateB - dateA;
-  });
+  let allGroups: any[] = [];
+  try {
+    const db = getFirestoreInstance();
+    // Remove orderby from query to avoid needing a composite index
+    const groupsQuery = query(
+      collection(db, 'groups'), 
+      where('country', '==', country)
+    );
+    const groupSnapshot = await getDocs(groupsQuery);
+    allGroups = groupSnapshot.docs.map(g => {
+      const group = mapDocToGroupLink(g);
+      group.showClicks = settings.showClicks; // Ensure global setting is applied
+      return group;
+    }).sort((a, b) => {
+      // Sort manually after fetching
+      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (err) {
+    console.error('Error fetching country groups:', err);
+    allGroups = [];
+  }
 
   const countryLabel = countries.find(c => c.value === country)?.label || country;
   const combinedSettings = { ...settings, layout: layoutSettings };
@@ -86,17 +93,19 @@ export default async function CountryPage({ params }: Props) {
   const seoContent = `Looking for active WhatsApp group links from ${countryLabel}? You've found the ultimate resource. WhatsUpLink offers the largest, most up-to-date list of active group links for ${countryLabel}. Whether you're searching for local community groups, business networking, or entertainment, our active WhatsApp link directory is your best bet. All links are verified to ensure you're joining active and relevant groups from ${countryLabel}. Explore the best active WhatsApp group links today!`;
 
   return (
-    <HomePage 
-      initialSettings={combinedSettings}
-      allGroups={allGroups}
-      initialCategories={categories}
-      initialCountries={countries}
-      pageTitle={`Groups in '${countryLabel}'`}
-      breadcrumbItems={breadcrumbItems}
-      seoTitle={seoTitle}
-      seoContent={seoContent}
-      adSettings={adSettings}
-    />
+    <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>
+      <HomePage 
+        initialSettings={combinedSettings}
+        allGroups={allGroups}
+        initialCategories={categories}
+        initialCountries={countries}
+        pageTitle={`Groups in '${countryLabel}'`}
+        breadcrumbItems={breadcrumbItems}
+        seoTitle={seoTitle}
+        seoContent={seoContent}
+        adSettings={adSettings}
+      />
+    </Suspense>
   );
 }
 

@@ -126,12 +126,14 @@ export default async function RootLayout({
         </Suspense>
         <div className="flex flex-col min-h-screen">
           <Providers>
-            <Header 
-              navLinks={layoutSettings.navLinks} 
-              logoUrl={layoutSettings.logoUrl}
-              categories={categories}
-              countries={countries}
-            />
+            <Suspense fallback={<header className="h-16 border-b bg-card" />}>
+              <Header 
+                navLinks={layoutSettings.navLinks} 
+                logoUrl={layoutSettings.logoUrl}
+                categories={categories}
+                countries={countries}
+              />
+            </Suspense>
             
             {/* Header Top Leaderboard Ad */}
             <AdSlot placement="header_top" adSettings={adSettings} className="container max-w-7xl px-4 my-2" />

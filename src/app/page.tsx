@@ -20,7 +20,7 @@ function getFirestoreInstance() {
 }
 
 export default async function Home() {
-  // Fetch settings and taxonomies on the server.
+  // Fetch settings and taxonomies on the server safely.
   const [settings, categories, countries, layoutSettings, adSettings] = await Promise.all([
     getModerationSettings(),
     getCategories(),
@@ -29,23 +29,29 @@ export default async function Home() {
     getAdSettings(),
   ]);
 
-  // Seed initial data if necessary.
-  await seedInitialData();
+  // Seed initial data if necessary (non-blocking)
+  seedInitialData().catch(err => console.warn('Background seed notice:', err));
 
-  // Fetch all groups on the server, sorting by the last submission date.
-  const db = getFirestoreInstance();
-  const groupsQuery = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
-  const groupSnapshot = await getDocs(groupsQuery);
-  const allGroups = groupSnapshot.docs.map(g => {
-    const group = mapDocToGroupLink(g);
-    group.showClicks = settings.showClicks; // Ensure global setting is applied
-    return group;
-  });
+  // Fetch all groups on the server safely with try/catch fallback
+  let allGroups: any[] = [];
+  try {
+    const db = getFirestoreInstance();
+    const groupsQuery = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
+    const groupSnapshot = await getDocs(groupsQuery);
+    allGroups = groupSnapshot.docs.map(g => {
+      const group = mapDocToGroupLink(g);
+      group.showClicks = settings.showClicks; // Ensure global setting is applied
+      return group;
+    });
+  } catch (error) {
+    console.error('Notice: Could not load groups from Firestore during SSR, returning empty list:', error);
+    allGroups = [];
+  }
 
   const combinedSettings = { ...settings, layout: layoutSettings };
 
   // Pass the server-fetched data to the client component.
-  // The client component will handle filtering and displaying the data.
+  // HomePage uses useSearchParams, so wrap it in Suspense for Next.js SSR compliance.
   return (
     <>
        {settings.showTicker && (
@@ -53,13 +59,15 @@ export default async function Home() {
             <Ticker />
         </Suspense>
        )}
-      <HomePage 
-        initialSettings={combinedSettings}
-        allGroups={allGroups}
-        initialCategories={categories}
-        initialCountries={countries}
-        adSettings={adSettings}
-      />
+      <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>
+        <HomePage 
+          initialSettings={combinedSettings}
+          allGroups={allGroups}
+          initialCategories={categories}
+          initialCountries={countries}
+          adSettings={adSettings}
+        />
+      </Suspense>
     </>
   );
 }
