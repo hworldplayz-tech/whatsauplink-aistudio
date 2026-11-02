@@ -7,11 +7,12 @@ import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = posts.find(p => p.slug === params.slug);
+  const resolvedParams = await Promise.resolve(params);
+  const post = posts.find(p => p.slug === resolvedParams.slug);
 
   if (!post) {
     return {
@@ -37,8 +38,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = posts.find(p => p.slug === params.slug);
+export default async function BlogPostPage({ params }: Props) {
+  const resolvedParams = await Promise.resolve(params);
+  const post = posts.find(p => p.slug === resolvedParams.slug);
 
   if (!post || !post.published) {
     notFound();

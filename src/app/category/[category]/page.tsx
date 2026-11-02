@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
 
 type Props = {
-  params: { category: string };
+  params: Promise<{ category: string }>;
 };
 
 // Helper function to initialize Firebase on the server
@@ -26,9 +26,10 @@ function getFirestoreInstance() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
   const allCategories = await getCategories();
-  const categoryInfo = allCategories.find(c => c.value === params.category);
-  const categoryLabel = categoryInfo ? categoryInfo.label : params.category.replace(/-/g, ' ');
+  const categoryInfo = allCategories.find(c => c.value === resolvedParams.category);
+  const categoryLabel = categoryInfo ? categoryInfo.label : (resolvedParams.category || '').replace(/-/g, ' ');
 
   const title = `Best ${categoryLabel} WhatsApp Group Links | WhatsUpLink`;
   const description = `Discover and join the best ${categoryLabel} WhatsApp groups and channels. The ultimate directory for finding communities about ${categoryLabel}.`;
@@ -45,7 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 
 export default async function CategoryPage({ params }: Props) {
-  const { category } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const category = resolvedParams?.category;
   if (!category) notFound();
 
   // Fetch settings and taxonomies on the server.

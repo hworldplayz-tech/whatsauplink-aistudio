@@ -10,7 +10,7 @@ import { getAdSettings } from '@/lib/ad-actions';
 import type { Metadata } from 'next';
 
 type Props = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 function getDb() {
@@ -69,10 +69,10 @@ export default async function GroupDetailPage({ params }: Props) {
     notFound();
   }
 
-  let relatedGroups = [];
-  let categories = [];
-  let countries = [];
-  let adSettings = { globalEnabled: false, slots: {} };
+  let relatedGroups: any[] = [];
+  let categories: any[] = [];
+  let countries: any[] = [];
+  let adSettings: any = { globalEnabled: false, slots: {} };
 
   try {
     const results = await Promise.allSettled([

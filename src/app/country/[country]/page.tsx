@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
 
 type Props = {
-  params: { country: string };
+  params: Promise<{ country: string }>;
 };
 
 // Helper function to initialize Firebase on the server
@@ -26,9 +26,10 @@ function getFirestoreInstance() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
   const allCountries = await getCountries();
-  const countryInfo = allCountries.find(c => c.value === params.country);
-  const countryLabel = countryInfo ? countryInfo.label : params.country.toUpperCase();
+  const countryInfo = allCountries.find(c => c.value === resolvedParams.country);
+  const countryLabel = countryInfo ? countryInfo.label : (resolvedParams.country || '').toUpperCase();
 
   const title = `${countryLabel} WhatsApp Group Links | WhatsUpLink`;
   const description = `Find and join ${countryLabel} WhatsApp group links. The best directory for WhatsApp groups and channels from ${countryLabel}.`;
@@ -44,7 +45,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CountryPage({ params }: Props) {
-  const { country } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const country = resolvedParams?.country;
   if (!country) notFound();
 
   // Fetch settings and taxonomies on the server.

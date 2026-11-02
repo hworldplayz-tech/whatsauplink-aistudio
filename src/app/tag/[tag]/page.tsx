@@ -13,7 +13,7 @@ import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
 
 type Props = {
-  params: { tag: string };
+  params: Promise<{ tag: string }>;
 };
 
 // Helper function to initialize Firebase on the server
@@ -25,7 +25,8 @@ function getFirestoreInstance() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const tags = params.tag.split('+').map(t => decodeURIComponent(t));
+  const resolvedParams = await Promise.resolve(params);
+  const tags = (resolvedParams?.tag || '').split('+').map(t => decodeURIComponent(t));
   const tagTitle = tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
 
   const title = `Active ${tagTitle} WhatsApp Group Links | WhatsUpLink`;
@@ -43,7 +44,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 
 export default async function TagPage({ params }: Props) {
-  const { tag } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const tag = resolvedParams?.tag;
   if (!tag) notFound();
 
   const tags = tag.split('+').map(t => decodeURIComponent(t).toLowerCase());

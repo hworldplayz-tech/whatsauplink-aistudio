@@ -182,18 +182,21 @@ export async function getPaginatedGroups(
 
 // ----- Categories & Countries Management Actions -----
 
+const FALLBACK_CATEGORIES: Category[] = DEFAULT_CATEGORIES.map(c => ({ id: c.value, label: c.label, value: c.value }));
+const FALLBACK_COUNTRIES: Country[] = DEFAULT_COUNTRIES.map(c => ({ id: c.value, label: c.label, value: c.value }));
+
 export async function getCategories(): Promise<Category[]> {
     try {
         const db = getFirestoreInstance();
         const catCollection = collection(db, 'categories');
         const q = query(catCollection, orderBy('label'));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) return DEFAULT_CATEGORIES;
+        if (snapshot.empty) return FALLBACK_CATEGORIES;
         const mapped = snapshot.docs.map(mapDocToCategory);
-        return mapped.length > 0 ? mapped : DEFAULT_CATEGORIES;
+        return mapped.length > 0 ? mapped : FALLBACK_CATEGORIES;
     } catch (error) {
         console.error('Error fetching categories from Firestore, using defaults:', error);
-        return DEFAULT_CATEGORIES;
+        return FALLBACK_CATEGORIES;
     }
 }
 
@@ -203,12 +206,12 @@ export async function getCountries(): Promise<Country[]> {
         const countryCollection = collection(db, 'countries');
         const q = query(countryCollection, orderBy('label'));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) return DEFAULT_COUNTRIES;
+        if (snapshot.empty) return FALLBACK_COUNTRIES;
         const mapped = snapshot.docs.map(mapDocToCountry);
-        return mapped.length > 0 ? mapped : DEFAULT_COUNTRIES;
+        return mapped.length > 0 ? mapped : FALLBACK_COUNTRIES;
     } catch (error) {
         console.error('Error fetching countries from Firestore, using defaults:', error);
-        return DEFAULT_COUNTRIES;
+        return FALLBACK_COUNTRIES;
     }
 }
 
