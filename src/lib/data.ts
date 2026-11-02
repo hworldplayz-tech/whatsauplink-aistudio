@@ -1,7 +1,6 @@
 
 import { getDoc, doc, collection, getDocs, query, where, limit, Timestamp, Firestore, DocumentData } from 'firebase/firestore';
 import { getModerationSettings as getGlobalModerationSettings } from '@/lib/admin-settings';
-import { unstable_cache } from 'next/cache';
 
 export type GroupLink = {
   id: string;
@@ -176,64 +175,55 @@ export function mapDocToCountry(doc: DocumentData): Country {
     };
 }
 
-// Caching `getGroupById` to improve performance on repeated visits.
-export const getGroupById = unstable_cache(
-    async (firestore: Firestore, id: string | undefined): Promise<GroupLink | undefined> => {
-        if (!id) return undefined;
-        
-        try {
-            const [groupDocSnap, settings] = await Promise.all([
-                getDoc(doc(firestore, 'groups', id)),
-                getGlobalModerationSettings() // Fetch global settings
-            ]);
+// Fetch group by ID with safe error handling
+export async function getGroupById(firestore: Firestore, id: string | undefined): Promise<GroupLink | undefined> {
+    if (!id) return undefined;
+    
+    try {
+        const [groupDocSnap, settings] = await Promise.all([
+            getDoc(doc(firestore, 'groups', id)),
+            getGlobalModerationSettings() // Fetch global settings
+        ]);
 
-            if (groupDocSnap.exists()) {
-                const group = mapDocToGroupLink(groupDocSnap);
-                // Override with the global setting
-                group.showClicks = settings.showClicks;
-                return group;
-            } else {
-                console.log("No such document!");
-                return undefined;
-            }
-        } catch (error) {
-            console.error("Error getting group by ID:", error);
+        if (groupDocSnap.exists()) {
+            const group = mapDocToGroupLink(groupDocSnap);
+            // Override with the global setting
+            group.showClicks = settings.showClicks;
+            return group;
+        } else {
+            console.log("No such document!");
             return undefined;
         }
-    },
-    ['group-by-id'], // Cache key prefix
-    { revalidate: 600 } // Revalidate cache every 10 minutes
-);
+    } catch (error) {
+        console.error("Error getting group by ID:", error);
+        return undefined;
+    }
+}
 
+// Fetch related groups with safe error handling
+export async function getRelatedGroups(firestore: Firestore, currentGroup: GroupLink): Promise<GroupLink[]> {
+    if (!currentGroup) return [];
 
-// Caching `getRelatedGroups` to improve performance.
-export const getRelatedGroups = unstable_cache(
-    async (firestore: Firestore, currentGroup: GroupLink): Promise<GroupLink[]> => {
-        if (!currentGroup) return [];
+    try {
+        const [querySnapshot, settings] = await Promise.all([
+            getDocs(query(
+                collection(firestore, 'groups'),
+                where('category', '==', currentGroup.category),
+                where('__name__', '!=', currentGroup.id),
+                limit(4)
+            )),
+            getGlobalModerationSettings() // Fetch global settings
+        ]);
 
-        try {
-            const [querySnapshot, settings] = await Promise.all([
-                getDocs(query(
-                    collection(firestore, 'groups'),
-                    where('category', '==', currentGroup.category),
-                    where('__name__', '!=', currentGroup.id),
-                    limit(4)
-                )),
-                getGlobalModerationSettings() // Fetch global settings
-            ]);
+        return querySnapshot.docs.map(doc => {
+            const group = mapDocToGroupLink(doc);
+            // Override with the global setting
+            group.showClicks = settings.showClicks;
+            return group;
+        });
 
-            return querySnapshot.docs.map(doc => {
-                const group = mapDocToGroupLink(doc);
-                // Override with the global setting
-                group.showClicks = settings.showClicks;
-                return group;
-            });
-
-        } catch (error) {
-            console.error("Error fetching related groups:", error);
-            return [];
-        }
-    },
-    ['related-groups'], // Cache key prefix
-    { revalidate: 600 } // Revalidate cache every 10 minutes
-);
+    } catch (error) {
+        console.error("Error fetching related groups:", error);
+        return [];
+    }
+}

@@ -1,8 +1,6 @@
 
 'use server';
 
-import { unstable_cache } from 'next/cache';
-
 export type TickerItem = {
   id: string;
   type: 'sport' | 'news';
@@ -138,32 +136,41 @@ const getSportsFixtures = async (): Promise<Match[]> => {
 }
 
 
-// This function is cached to avoid hitting the API rate limit.
-// It will only refetch data every 10 minutes.
-export const getTickerData = unstable_cache(
-  async (): Promise<TickerItem[]> => {
-    
+// In-memory cache to avoid hitting third-party APIs repeatedly without crashing on serverless Workers
+let tickerMemoryCache: { items: TickerItem[]; expiresAt: number } | null = null;
+
+export async function getTickerData(): Promise<TickerItem[]> {
+  const now = Date.now();
+  if (tickerMemoryCache && tickerMemoryCache.expiresAt > now) {
+    return tickerMemoryCache.items;
+  }
+
+  try {
     const sportsData = await getSportsFixtures();
     if (sportsData.length > 0) {
-        return sportsData.map(match => ({
+        const items: TickerItem[] = sportsData.map(match => ({
             id: match.id,
-            type: 'sport',
+            type: 'sport' as const,
             data: match,
         }));
+        tickerMemoryCache = { items, expiresAt: now + 10 * 60 * 1000 };
+        return items;
     }
     
     const newsData = await getNews();
     if (newsData.length > 0) {
-        return newsData.map((article, index) => ({
+        const items: TickerItem[] = newsData.map((article, index) => ({
             id: `news-${index}`,
-            type: 'news',
+            type: 'news' as const,
             data: article,
         }));
+        tickerMemoryCache = { items, expiresAt: now + 10 * 60 * 1000 };
+        return items;
     }
+  } catch (error) {
+    console.error('Error fetching ticker data:', error);
+  }
 
-    return []; // Return empty if both fail
-  },
-  ['ticker-data'], // cache key
-  { revalidate: 600 } // revalidate every 10 minutes
-);
+  return [];
+}
 
