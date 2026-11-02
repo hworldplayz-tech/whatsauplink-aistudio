@@ -20,17 +20,29 @@ function getFirestoreInstance() {
 }
 
 export default async function Home() {
-  // Fetch settings and taxonomies on the server safely.
-  const [settings, categories, countries, layoutSettings, adSettings] = await Promise.all([
-    getModerationSettings(),
-    getCategories(),
-    getCountries(),
-    getLayoutSettings(),
-    getAdSettings(),
-  ]);
+  let settings: any = { showClicks: true, showTicker: true, tickerSpeed: 40 };
+  let categories: any[] = [];
+  let countries: any[] = [];
+  let layoutSettings: any = {};
+  let adSettings: any = { globalEnabled: false, slots: {} };
 
-  // Seed initial data if necessary (non-blocking)
-  seedInitialData().catch(err => console.warn('Background seed notice:', err));
+  try {
+    const results = await Promise.allSettled([
+      getModerationSettings(),
+      getCategories(),
+      getCountries(),
+      getLayoutSettings(),
+      getAdSettings(),
+    ]);
+
+    if (results[0].status === 'fulfilled') settings = results[0].value;
+    if (results[1].status === 'fulfilled') categories = results[1].value;
+    if (results[2].status === 'fulfilled') countries = results[2].value;
+    if (results[3].status === 'fulfilled') layoutSettings = results[3].value;
+    if (results[4].status === 'fulfilled') adSettings = results[4].value;
+  } catch (err) {
+    console.error('Notice: Error loading home settings:', err);
+  }
 
   // Fetch all groups on the server safely with try/catch fallback
   let allGroups: any[] = [];
@@ -44,7 +56,7 @@ export default async function Home() {
       return group;
     });
   } catch (error) {
-    console.error('Notice: Could not load groups from Firestore during SSR, returning empty list:', error);
+    console.warn('Notice: Could not load groups from Firestore during SSR, returning empty list for client hydration:', error);
     allGroups = [];
   }
 

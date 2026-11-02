@@ -23,46 +23,59 @@ const inter = Inter({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const layoutSettings = await getLayoutSettings();
-  const { seoSettings, logoUrl: configLogoUrl } = layoutSettings;
-  const logoUrl = configLogoUrl || '/whatsuplink_logo_and_favicon_without_background.png';
+  try {
+    const layoutSettings = await getLayoutSettings();
+    const seoSettings = layoutSettings?.seoSettings || {
+      siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
+      metaDescription: "The ultimate directory for WhatsApp group links. Discover and join groups for family, friends, USA communities, entertainment, PUBG, Freefire, adult topics, and more. Share your own WhatsApp group link today!",
+      metaKeywords: "whatsapp group links, whatsapp groups, usa whatsapp group, family whatsapp group link, adult whatsapp group links"
+    };
+    const logoUrl = layoutSettings?.logoUrl || '/whatsuplink_logo_and_favicon_without_background.png';
 
-  const title = seoSettings.siteTitle;
-  const description = seoSettings.metaDescription;
+    const title = seoSettings.siteTitle || "Join active whatsapp group links | submit your group - Whatuplink";
+    const description = seoSettings.metaDescription || "The ultimate directory for WhatsApp group links.";
 
-  return {
-    metadataBase: new URL('https://whatsuplink.online'),
-    title: {
-      default: title,
-      template: '%s - Whatsuplink',
-    },
-    description: description,
-    openGraph: {
-      title: title,
+    return {
+      metadataBase: new URL('https://whatsuplink.online'),
+      title: {
+        default: title,
+        template: '%s - Whatsuplink',
+      },
       description: description,
-      url: 'https://whatsuplink.online',
-      siteName: 'WhatsUpLink',
-      locale: 'en_US',
-      type: 'website',
-      images: [logoUrl],
-    },
-    keywords: seoSettings.metaKeywords,
-    icons: {
-      icon: '/favicon.ico', // Standard favicon path
-      apple: '/apple-touch-icon.png', // Standard Apple touch icon path
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
+      openGraph: {
+        title: title,
+        description: description,
+        url: 'https://whatsuplink.online',
+        siteName: 'WhatsUpLink',
+        locale: 'en_US',
+        type: 'website',
+        images: [logoUrl],
+      },
+      keywords: seoSettings.metaKeywords,
+      icons: {
+        icon: '/favicon.ico',
+        apple: '/apple-touch-icon.png',
+      },
+      robots: {
         index: true,
         follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
       },
-    },
-  };
+    };
+  } catch (error) {
+    console.error('Notice: Error in generateMetadata, using fallback:', error);
+    return {
+      metadataBase: new URL('https://whatsuplink.online'),
+      title: 'Join active whatsapp group links | submit your group - Whatuplink',
+      description: 'The ultimate directory for WhatsApp group links.',
+    };
+  }
 }
 
 
@@ -76,20 +89,37 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [moderationSettings, layoutSettings, categories, countries, adSettings] = await Promise.all([
-    getModerationSettings(),
-    getLayoutSettings(),
-    getCategories(),
-    getCountries(),
-    getAdSettings(),
-  ]);
+  let moderationSettings: any = { tickerSpeed: 40 };
+  let layoutSettings: any = { backgroundSettings: { bgImageEnabled: false } };
+  let categories: any[] = [];
+  let countries: any[] = [];
+  let adSettings: any = { globalEnabled: false, slots: {} };
+
+  try {
+    const results = await Promise.allSettled([
+      getModerationSettings(),
+      getLayoutSettings(),
+      getCategories(),
+      getCountries(),
+      getAdSettings(),
+    ]);
+    
+    if (results[0].status === 'fulfilled') moderationSettings = results[0].value;
+    if (results[1].status === 'fulfilled') layoutSettings = results[1].value;
+    if (results[2].status === 'fulfilled') categories = results[2].value;
+    if (results[3].status === 'fulfilled') countries = results[3].value;
+    if (results[4].status === 'fulfilled') adSettings = results[4].value;
+  } catch (err) {
+    console.error('Notice: Error resolving settings in RootLayout:', err);
+  }
   
   const bodyStyle: React.CSSProperties & Record<string, string> = {
-    '--ticker-speed': `${moderationSettings.tickerSpeed ?? 40}s`
+    '--ticker-speed': `${moderationSettings?.tickerSpeed ?? 40}s`
   };
 
-  if (layoutSettings.backgroundSettings.bgImageEnabled && layoutSettings.backgroundSettings.bgImageUrl) {
-    bodyStyle['--background-image'] = `url(${layoutSettings.backgroundSettings.bgImageUrl})`;
+  const bgSettings = layoutSettings?.backgroundSettings;
+  if (bgSettings?.bgImageEnabled && bgSettings?.bgImageUrl) {
+    bodyStyle['--background-image'] = `url(${bgSettings.bgImageUrl})`;
   } else {
     bodyStyle['--background-image'] = 'none';
   }

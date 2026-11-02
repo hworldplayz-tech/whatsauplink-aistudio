@@ -400,8 +400,6 @@ export async function getLayoutSettings(): Promise<LayoutSettings> {
                 }
             };
         } else {
-            // Document doesn't exist, create it with defaults
-            await setDoc(settingsDocRef, defaultLayoutSettings);
             return defaultLayoutSettings;
         }
     } catch (error) {

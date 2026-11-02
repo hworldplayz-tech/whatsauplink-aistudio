@@ -41,8 +41,6 @@ export async function getAdSettings(): Promise<AdSettings> {
                 slots: mergedSlots,
             };
         } else {
-            // Document doesn't exist, seed with default settings
-            await setDoc(docRef, DEFAULT_AD_SETTINGS);
             return DEFAULT_AD_SETTINGS;
         }
     } catch (error) {

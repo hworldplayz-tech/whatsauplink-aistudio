@@ -43,8 +43,6 @@ export async function getModerationSettings(): Promise<ModerationSettings> {
                 ...data,
             };
         } else {
-            // If the document doesn't exist, create it with default values
-            await setDoc(settingsDocRef, defaultSettings);
             return defaultSettings;
         }
     } catch (error) {
