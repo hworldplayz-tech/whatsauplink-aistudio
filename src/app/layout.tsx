@@ -15,6 +15,7 @@ import { Providers } from './providers';
 import Script from 'next/script';
 import { AdSlot } from '@/components/ads/ad-slot';
 import { PopupAdModal, StickyBottomAdBar } from '@/components/ads/popup-ad';
+import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
 
 const inter = Inter({ 
   subsets: ['latin'], 
@@ -123,8 +124,8 @@ export default async function RootLayout({
 }>) {
   let moderationSettings: any = { tickerSpeed: 40 };
   let layoutSettings: any = { ...DEFAULT_LAYOUT_FALLBACK };
-  let categories: any[] = [];
-  let countries: any[] = [];
+  let categories: any[] = [...DEFAULT_CATEGORIES];
+  let countries: any[] = [...DEFAULT_COUNTRIES];
   let adSettings: any = { globalEnabled: false, slots: {} };
 
   try {

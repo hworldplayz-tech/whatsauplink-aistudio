@@ -11,6 +11,8 @@ import { mapDocToGroupLink } from '@/lib/data';
 import { Ticker } from '@/components/sports/ticker';
 import { Suspense } from 'react';
 
+import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
+
 // Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
     if (!getApps().length) {
@@ -44,8 +46,8 @@ const DEFAULT_LAYOUT_FALLBACK = {
 
 export default async function Home() {
   let settings: any = { showClicks: true, showTicker: true, tickerSpeed: 40 };
-  let categories: any[] = [];
-  let countries: any[] = [];
+  let categories: any[] = [...DEFAULT_CATEGORIES];
+  let countries: any[] = [...DEFAULT_COUNTRIES];
   let layoutSettings: any = { ...DEFAULT_LAYOUT_FALLBACK };
   let adSettings: any = { globalEnabled: false, slots: {} };
 

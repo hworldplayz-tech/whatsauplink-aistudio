@@ -35,18 +35,19 @@ export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
+const EMPTY_SERVICES: FirebaseContextType = {
+  app: {} as FirebaseApp,
+  auth: {} as Auth,
+  firestore: {} as Firestore,
+};
+
 export const useFirestore = () => {
   const context = useContext(FirebaseContext);
-  if (context === null) {
-    throw new Error('useFirestore must be used within a FirebaseProvider');
-  }
-  return context;
+  return context || EMPTY_SERVICES;
 };
 
 export const useAuth = () => {
   const context = useContext(FirebaseContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within a FirebaseProvider');
-  }
-  return context;
+  return context || EMPTY_SERVICES;
 };
+

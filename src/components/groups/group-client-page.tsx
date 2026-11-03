@@ -55,10 +55,52 @@ export function GroupClientPage({
     }
   }, []);
 
-  // When allGroups prop updates, turn off the loading state
+  const [groupsList, setGroupsList] = useState<GroupLink[]>(allGroups);
+
+  // When allGroups prop updates, update state and turn off loading
   useEffect(() => {
-    setIsLoading(false);
+    if (allGroups && allGroups.length > 0) {
+      setGroupsList(allGroups);
+      setIsLoading(false);
+    }
   }, [allGroups]);
+
+  // Client-side fallback: fetch active groups if initial allGroups was empty
+  useEffect(() => {
+    if (groupsList.length === 0) {
+      let isMounted = true;
+      setIsLoading(true);
+      import('@/firebase/config').then(({ firebaseConfig }) => {
+        import('firebase/app').then(({ initializeApp, getApps, getApp }) => {
+          import('firebase/firestore').then(({ getFirestore, collection, getDocs, query, orderBy }) => {
+            const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+            const db = getFirestore(app);
+            const q = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
+            getDocs(q).then((snapshot) => {
+              if (isMounted) {
+                import('@/lib/data').then(({ mapDocToGroupLink }) => {
+                  const fetched = snapshot.docs.map(doc => {
+                    const group = mapDocToGroupLink(doc);
+                    group.showClicks = initialSettings.showClicks;
+                    return group;
+                  });
+                  setGroupsList(fetched);
+                  setIsLoading(false);
+                });
+              }
+            }).catch(err => {
+              console.warn('Notice: Client-side group fetch fallback error:', err);
+              if (isMounted) setIsLoading(false);
+            });
+          });
+        });
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [groupsList.length, initialSettings.showClicks]);
+
 
   // Update categories and countries if they change
   useEffect(() => {
@@ -75,7 +117,7 @@ export function GroupClientPage({
   };
 
   const filteredGroups = useMemo(() => {
-    return allGroups.filter(group => {
+    return groupsList.filter(group => {
       const searchLower = searchQuery.toLowerCase();
       const searchMatch = !searchQuery || 
         group.title.toLowerCase().includes(searchLower) || 
@@ -86,7 +128,7 @@ export function GroupClientPage({
       const typeMatch = selectedType === 'all' || group.type === selectedType;
       return searchMatch && countryMatch && categoryMatch && typeMatch;
     });
-  }, [allGroups, searchQuery, selectedCountry, selectedCategory, selectedType]);
+  }, [groupsList, searchQuery, selectedCountry, selectedCategory, selectedType]);
 
   const visibleGroups = useMemo(() => {
     return filteredGroups.slice(0, visibleCount);
