@@ -168,10 +168,10 @@ export function HomePage({
         </Suspense>
 
         {/* Show static SEO content on homepage, or dynamic SEO content on category/country pages */}
-        {!isDynamicPage && settings.layout.homepageSeoContent.enabled && (
+        {!isDynamicPage && settings?.layout?.homepageSeoContent?.enabled && (
             <SeoContent 
-                heading={settings.layout.homepageSeoContent.heading}
-                content={settings.layout.homepageSeoContent.content}
+                heading={settings.layout.homepageSeoContent.heading || 'Active WhatsApp Group Links'}
+                content={settings.layout.homepageSeoContent.content || ''}
             />
         )}
         {isDynamicPage && settings.showDynamicSeoContent && seoTitle && seoContent && (

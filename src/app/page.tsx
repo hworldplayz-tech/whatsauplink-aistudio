@@ -19,11 +19,34 @@ function getFirestoreInstance() {
     return getFirestore(getApp());
 }
 
+const DEFAULT_LAYOUT_FALLBACK = {
+  logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+  footerContent: {
+    heading: 'WhatsUpLink',
+    paragraph: 'Your number one directory for discovering and sharing WhatsApp group links.',
+    copyrightText: `Built for WhatsUpLink. © ${new Date().getFullYear()}`,
+  },
+  backgroundSettings: {
+    bgImageEnabled: true,
+    bgImageUrl: '/whatsapp_background_official_image.png',
+  },
+  homepageSeoContent: {
+    enabled: true,
+    heading: 'Your Ultimate Hub for Active WhatsApp Group Links',
+    content: 'Welcome to WhatsUpLink, the largest directory of active WhatsApp group links.',
+  },
+  seoSettings: {
+    siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
+    metaDescription: "The ultimate directory for WhatsApp group links.",
+    metaKeywords: "whatsapp group links, whatsapp groups"
+  }
+};
+
 export default async function Home() {
   let settings: any = { showClicks: true, showTicker: true, tickerSpeed: 40 };
   let categories: any[] = [];
   let countries: any[] = [];
-  let layoutSettings: any = {};
+  let layoutSettings: any = { ...DEFAULT_LAYOUT_FALLBACK };
   let adSettings: any = { globalEnabled: false, slots: {} };
 
   try {
@@ -38,7 +61,13 @@ export default async function Home() {
     if (results[0].status === 'fulfilled') settings = results[0].value;
     if (results[1].status === 'fulfilled') categories = results[1].value;
     if (results[2].status === 'fulfilled') countries = results[2].value;
-    if (results[3].status === 'fulfilled') layoutSettings = results[3].value;
+    if (results[3].status === 'fulfilled' && results[3].value) {
+      layoutSettings = { 
+        ...DEFAULT_LAYOUT_FALLBACK, 
+        ...results[3].value,
+        homepageSeoContent: { ...DEFAULT_LAYOUT_FALLBACK.homepageSeoContent, ...(results[3].value.homepageSeoContent || {}) },
+      };
+    }
     if (results[4].status === 'fulfilled') adSettings = results[4].value;
   } catch (err) {
     console.error('Notice: Error loading home settings:', err);

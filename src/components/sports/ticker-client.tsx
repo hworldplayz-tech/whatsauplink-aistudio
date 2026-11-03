@@ -78,7 +78,7 @@ const NewsItem = ({ item }: { item: NewsArticle }) => (
 
 type TickerClientProps = {
     items: TickerItem[];
-    tickerType: 'LIVE' | 'NEWS';
+    tickerType: 'LIVE' | 'NEWS' | 'UPDATES';
 }
 
 export function TickerClient({ items, tickerType }: TickerClientProps) {

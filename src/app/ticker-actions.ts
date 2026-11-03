@@ -28,25 +28,47 @@ export type NewsArticle = {
   source: string;
 };
 
+const FALLBACK_TICKER_NEWS: NewsArticle[] = [
+  {
+    title: "Discover 10,000+ active WhatsApp groups and community channels worldwide",
+    url: "/",
+    source: "WhatsUpLink",
+  },
+  {
+    title: "Submit your WhatsApp group link today for free to get discovered by thousands",
+    url: "/submit",
+    source: "Community",
+  },
+  {
+    title: "Trending: PUBG, Free Fire, and mobile gaming community groups now open",
+    url: "/category/gaming",
+    source: "Trending",
+  },
+  {
+    title: "Join active entertainment, movie fans, and music discussion groups",
+    url: "/category/entertainment",
+    source: "Popular",
+  },
+  {
+    title: "Safety Tip: Never share personal passwords or one-time codes in public groups",
+    url: "/blog/5-tips-for-safely-joining-public-whatsapp-groups",
+    source: "Safety Guide",
+  },
+];
+
 const getNews = async (): Promise<NewsArticle[]> => {
     const apiKey = process.env.NEWS_API_KEY;
     if (!apiKey) {
-      console.error('NewsAPI.org key is not configured.');
       return [];
     }
 
-    // Fetching from a few reliable tech sources to ensure content is always available.
     const sources = 'techcrunch,the-verge,wired,ars-technica';
     const url = `https://newsapi.org/v2/top-headlines?sources=${sources}&apiKey=${apiKey}`;
 
     try {
-        const response = await fetch(url, {
-            // NewsAPI doesn't require extra headers, just the key in the URL.
-        });
+        const response = await fetch(url);
 
         if (!response.ok) {
-            const errorBody = await response.json();
-            console.error(`NewsAPI request failed with status: ${response.status}`, errorBody.message);
             return [];
         }
 
@@ -62,7 +84,7 @@ const getNews = async (): Promise<NewsArticle[]> => {
         }));
 
     } catch (error) {
-        console.error('Error fetching news from NewsAPI.org:', error);
+        console.warn('Notice: Could not fetch news from NewsAPI:', error);
         return [];
     }
 }
@@ -70,7 +92,6 @@ const getNews = async (): Promise<NewsArticle[]> => {
 const getSportsFixtures = async (): Promise<Match[]> => {
     const apiKey = process.env.RAPIDAPI_KEY;
     if (!apiKey) {
-      console.error('RapidAPI key is not configured for sports.');
       return [];
     }
     
@@ -87,7 +108,6 @@ const getSportsFixtures = async (): Promise<Match[]> => {
             );
 
             if (!response.ok) {
-                console.error(`Sports API request failed for params "${params}" with status: ${response.status}`);
                 return [];
             }
 
@@ -113,7 +133,7 @@ const getSportsFixtures = async (): Promise<Match[]> => {
             }));
 
         } catch (error) {
-            console.error(`Error fetching sports fixtures with params "${params}":`, error);
+            console.warn(`Notice: Could not fetch sports fixtures for params "${params}":`, error);
             return [];
         }
     }
@@ -167,10 +187,23 @@ export async function getTickerData(): Promise<TickerItem[]> {
         tickerMemoryCache = { items, expiresAt: now + 10 * 60 * 1000 };
         return items;
     }
+
+    // Fallback announcements when external keys are not configured
+    const fallbackItems: TickerItem[] = FALLBACK_TICKER_NEWS.map((article, index) => ({
+      id: `notice-${index}`,
+      type: 'news' as const,
+      data: article,
+    }));
+    tickerMemoryCache = { items: fallbackItems, expiresAt: now + 10 * 60 * 1000 };
+    return fallbackItems;
   } catch (error) {
-    console.error('Error fetching ticker data:', error);
+    console.warn('Notice: Error resolving ticker data, using fallback announcements:', error);
   }
 
-  return [];
+  return FALLBACK_TICKER_NEWS.map((article, index) => ({
+    id: `notice-${index}`,
+    type: 'news' as const,
+    data: article,
+  }));
 }
 

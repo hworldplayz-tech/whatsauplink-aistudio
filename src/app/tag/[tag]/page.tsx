@@ -25,21 +25,28 @@ function getFirestoreInstance() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const resolvedParams = await Promise.resolve(params);
-  const tags = (resolvedParams?.tag || '').split('+').map(t => decodeURIComponent(t));
-  const tagTitle = tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const tags = (resolvedParams?.tag || '').split('+').map(t => decodeURIComponent(t));
+    const tagTitle = tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
 
-  const title = `Active ${tagTitle} WhatsApp Group Links | WhatsUpLink`;
-  const description = `Find and join the best ${tagTitle} WhatsApp groups. The ultimate directory for active communities related to ${tagTitle}.`;
+    const title = `Active ${tagTitle} WhatsApp Group Links | WhatsUpLink`;
+    const description = `Find and join the best ${tagTitle} WhatsApp groups. The ultimate directory for active communities related to ${tagTitle}.`;
 
-  return {
-    title,
-    description,
-    openGraph: {
+    return {
       title,
       description,
-    },
-  };
+      openGraph: {
+        title,
+        description,
+      },
+    };
+  } catch (e) {
+    return {
+      title: 'WhatsApp Group Links | WhatsUpLink',
+      description: 'Discover active WhatsApp groups and channels.',
+    };
+  }
 }
 
 
@@ -51,13 +58,26 @@ export default async function TagPage({ params }: Props) {
   const tags = tag.split('+').map(t => decodeURIComponent(t).toLowerCase());
   const firstTag = tags[0];
 
-  // Fetch settings and taxonomies on the server.
-  const [settings, categories, countries, layoutSettings] = await Promise.all([
-    getModerationSettings(),
-    getCategories(),
-    getCountries(),
-    getLayoutSettings()
-  ]);
+  let settings: any = { showClicks: true, showTicker: true, tickerSpeed: 40 };
+  let categories: any[] = [];
+  let countries: any[] = [];
+  let layoutSettings: any = {};
+
+  try {
+    const results = await Promise.allSettled([
+      getModerationSettings(),
+      getCategories(),
+      getCountries(),
+      getLayoutSettings()
+    ]);
+
+    if (results[0].status === 'fulfilled') settings = results[0].value;
+    if (results[1].status === 'fulfilled') categories = results[1].value;
+    if (results[2].status === 'fulfilled') countries = results[2].value;
+    if (results[3].status === 'fulfilled') layoutSettings = results[3].value;
+  } catch (err) {
+    console.warn('Notice: Error loading tag settings:', err);
+  }
 
   const db = getFirestoreInstance();
   let allGroups: any[] = [];

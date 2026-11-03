@@ -84,13 +84,45 @@ export const viewport: Viewport = {
 };
 
 
+const DEFAULT_LAYOUT_FALLBACK = {
+  logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+  navLinks: [
+    { id: '1', label: 'Home', href: '/' },
+    { id: '2', label: 'Submit Group', href: '/submit' },
+    { id: '7', label: 'Blog', href: '/blog' },
+    { id: '3', label: 'About', href: '/about' },
+    { id: '4', label: 'Contact', href: '/contact' },
+    { id: '5', label: 'Privacy', href: '/privacy' },
+    { id: '6', label: 'Terms', href: '/terms' },
+  ],
+  footerContent: {
+    heading: 'WhatsUpLink',
+    paragraph: 'Your number one directory for discovering and sharing WhatsApp group links.',
+    copyrightText: `Built for WhatsUpLink. © ${new Date().getFullYear()}`,
+  },
+  backgroundSettings: {
+    bgImageEnabled: true,
+    bgImageUrl: '/whatsapp_background_official_image.png',
+  },
+  homepageSeoContent: {
+    enabled: true,
+    heading: 'Your Ultimate Hub for Active WhatsApp Group Links',
+    content: 'Welcome to WhatsUpLink, the largest directory of active WhatsApp group links.',
+  },
+  seoSettings: {
+    siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
+    metaDescription: "The ultimate directory for WhatsApp group links.",
+    metaKeywords: "whatsapp group links, whatsapp groups"
+  }
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   let moderationSettings: any = { tickerSpeed: 40 };
-  let layoutSettings: any = { backgroundSettings: { bgImageEnabled: false } };
+  let layoutSettings: any = { ...DEFAULT_LAYOUT_FALLBACK };
   let categories: any[] = [];
   let countries: any[] = [];
   let adSettings: any = { globalEnabled: false, slots: {} };
@@ -105,7 +137,14 @@ export default async function RootLayout({
     ]);
     
     if (results[0].status === 'fulfilled') moderationSettings = results[0].value;
-    if (results[1].status === 'fulfilled') layoutSettings = results[1].value;
+    if (results[1].status === 'fulfilled' && results[1].value) {
+      layoutSettings = { 
+        ...DEFAULT_LAYOUT_FALLBACK, 
+        ...results[1].value,
+        footerContent: { ...DEFAULT_LAYOUT_FALLBACK.footerContent, ...(results[1].value.footerContent || {}) },
+        backgroundSettings: { ...DEFAULT_LAYOUT_FALLBACK.backgroundSettings, ...(results[1].value.backgroundSettings || {}) },
+      };
+    }
     if (results[2].status === 'fulfilled') categories = results[2].value;
     if (results[3].status === 'fulfilled') countries = results[3].value;
     if (results[4].status === 'fulfilled') adSettings = results[4].value;
@@ -128,27 +167,13 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* The AdSense script is now handled via the next/script component below */}
+        {/* The AdSense script is handled via the next/script component */}
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8130991342525434"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
-        <style>
-          {`
-            @keyframes marquee {
-              from { transform: translateX(0); }
-              to { transform: translateX(-50%); }
-            }
-            .animate-marquee {
-              animation: marquee var(--ticker-speed, 40s) linear infinite;
-            }
-            .animate-marquee:hover {
-              animation-play-state: paused;
-            }
-          `}
-        </style>
       </head>
       <body className={`${inter.variable} font-body antialiased`} style={bodyStyle}>
         <Suspense>
@@ -158,8 +183,8 @@ export default async function RootLayout({
           <Providers>
             <Suspense fallback={<header className="h-16 border-b bg-card" />}>
               <Header 
-                navLinks={layoutSettings.navLinks} 
-                logoUrl={layoutSettings.logoUrl}
+                navLinks={layoutSettings?.navLinks || DEFAULT_LAYOUT_FALLBACK.navLinks} 
+                logoUrl={layoutSettings?.logoUrl || DEFAULT_LAYOUT_FALLBACK.logoUrl}
                 categories={categories}
                 countries={countries}
               />
@@ -183,17 +208,17 @@ export default async function RootLayout({
             <Toaster />
             <footer className="border-t bg-card">
               <div className="container py-12">
-                <div className={`flex flex-col md:flex-row items-center gap-12 ${moderationSettings.showNewsletter ? 'justify-between' : 'justify-center'}`}>
-                  <div className={`flex flex-col items-center ${moderationSettings.showNewsletter ? 'md:items-start text-center md:text-left' : 'text-center md:items-center md:text-center'}`}>
-                      <h3 className="text-xl font-bold">{layoutSettings.footerContent.heading}</h3>
+                <div className={`flex flex-col md:flex-row items-center gap-12 ${moderationSettings?.showNewsletter ? 'justify-between' : 'justify-center'}`}>
+                  <div className={`flex flex-col items-center ${moderationSettings?.showNewsletter ? 'md:items-start text-center md:text-left' : 'text-center md:items-center md:text-center'}`}>
+                      <h3 className="text-xl font-bold">{layoutSettings?.footerContent?.heading || 'WhatsUpLink'}</h3>
                       <p className="text-muted-foreground mt-2 max-w-md">
-                        {layoutSettings.footerContent.paragraph}
+                        {layoutSettings?.footerContent?.paragraph || 'Your number one directory for discovering and sharing WhatsApp group links.'}
                       </p>
                        <p className="text-sm text-muted-foreground mt-8">
-                          {layoutSettings.footerContent.copyrightText}
+                          {layoutSettings?.footerContent?.copyrightText || `Built for WhatsUpLink. © ${new Date().getFullYear()}`}
                         </p>
                   </div>
-                  {moderationSettings.showNewsletter && (
+                  {moderationSettings?.showNewsletter && (
                     <div className="flex-shrink-0 w-full md:w-auto">
                         <NewsletterSignup />
                     </div>

@@ -1,0 +1,289 @@
+2026-11-03T07:59:28.786Z	Initializing build environment...
+2026-11-03T07:59:30.076Z	Success: Finished initializing build environment
+2026-11-03T07:59:30.640Z	Cloning repository...
+2026-11-03T07:59:32.245Z	Restoring from dependencies cache
+2026-11-03T07:59:32.248Z	Restoring from build output cache
+2026-11-03T07:59:32.251Z	Detected the following tools from environment: bun@1.4.4, nodejs@24.22.1
+2026-11-03T07:59:32.421Z	Installing project dependencies: bun install --frozen-lockfile
+2026-11-03T07:59:33.286Z	bun install v1.4.4 (38afee6c8)
+2026-11-03T07:59:41.627Z	
+2026-11-03T07:59:41.628Z	+ @opennextjs/cloudflare@1.20.15
+2026-11-03T07:59:41.628Z	+ @types/mailchimp__mailchimp_marketing@3.0.22
+2026-11-03T07:59:41.628Z	+ @types/node@20.19.43
+2026-11-03T07:59:41.628Z	+ @types/nprogress@0.2.3
+2026-11-03T07:59:41.628Z	+ @types/react@18.3.31
+2026-11-03T07:59:41.631Z	+ @types/react-dom@18.3.7
+2026-11-03T07:59:41.631Z	+ postcss@8.5.32
+2026-11-03T07:59:41.631Z	+ tailwindcss@3.4.19
+2026-11-03T07:59:41.632Z	+ typescript@5.9.3
+2026-11-03T07:59:41.632Z	+ wrangler@4.156.0
+2026-11-03T07:59:41.632Z	+ @emailjs/browser@4.4.1
+2026-11-03T07:59:41.632Z	+ @genkit-ai/google-genai@1.43.0
+2026-11-03T07:59:41.632Z	+ @genkit-ai/next@1.43.0
+2026-11-03T07:59:41.632Z	+ @hookform/resolvers@4.1.3
+2026-11-03T07:59:41.633Z	+ @mailchimp/mailchimp_marketing@3.0.80
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-accordion@1.3.1
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-alert-dialog@1.2.1
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-avatar@1.3.1
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-checkbox@1.4.1
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-collapsible@1.2.1
+2026-11-03T07:59:41.633Z	+ @radix-ui/react-dialog@1.3.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-dropdown-menu@2.2.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-label@2.1.17
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-menubar@1.2.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-navigation-menu@1.4.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-popover@1.3.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-progress@1.2.1
+2026-11-03T07:59:41.634Z	+ @radix-ui/react-radio-group@1.5.1
+2026-11-03T07:59:41.635Z	+ @radix-ui/react-scroll-area@1.4.0
+2026-11-03T07:59:41.635Z	+ @radix-ui/react-select@2.4.1
+2026-11-03T07:59:41.635Z	+ @radix-ui/react-separator@1.2.0
+2026-11-03T07:59:41.635Z	+ @radix-ui/react-slider@1.6.1
+2026-11-03T07:59:41.635Z	+ @radix-ui/react-slot@1.5.0
+2026-11-03T07:59:41.636Z	+ @radix-ui/react-switch@1.4.1
+2026-11-03T07:59:41.636Z	+ @radix-ui/react-tabs@1.2.1
+2026-11-03T07:59:41.636Z	+ @radix-ui/react-toast@1.3.1
+2026-11-03T07:59:41.636Z	+ @radix-ui/react-toggle@1.2.1
+2026-11-03T07:59:41.636Z	+ @radix-ui/react-toggle-group@1.2.1
+2026-11-03T07:59:41.637Z	+ @radix-ui/react-tooltip@1.4.1
+2026-11-03T07:59:41.637Z	+ class-variance-authority@0.7.1
+2026-11-03T07:59:41.637Z	+ clsx@2.1.1
+2026-11-03T07:59:41.637Z	+ date-fns@3.6.0
+2026-11-03T07:59:41.637Z	+ dotenv@16.6.1
+2026-11-03T07:59:41.637Z	+ embla-carousel-react@8.6.0
+2026-11-03T07:59:41.638Z	+ firebase@11.10.0
+2026-11-03T07:59:41.638Z	+ genkit@1.43.0
+2026-11-03T07:59:41.638Z	+ link-preview-js@3.2.0
+2026-11-03T07:59:41.639Z	+ lucide-react@0.475.0
+2026-11-03T07:59:41.640Z	+ next@15.5.28
+2026-11-03T07:59:41.640Z	+ nprogress@0.2.0
+2026-11-03T07:59:41.640Z	+ patch-package@8.0.1
+2026-11-03T07:59:41.640Z	+ react@18.3.1
+2026-11-03T07:59:41.640Z	+ react-day-picker@8.10.2
+2026-11-03T07:59:41.640Z	+ react-dom@18.3.1
+2026-11-03T07:59:41.642Z	+ react-hook-form@7.91.0
+2026-11-03T07:59:41.642Z	+ recharts@2.15.4
+2026-11-03T07:59:41.642Z	+ tailwind-merge@3.7.0
+2026-11-03T07:59:41.642Z	+ tailwindcss-animate@1.0.7
+2026-11-03T07:59:41.642Z	+ zod@3.25.76
+2026-11-03T07:59:41.642Z	
+2026-11-03T07:59:41.642Z	946 packages installed [8.37s]
+2026-11-03T07:59:41.642Z	
+2026-11-03T07:59:41.643Z	Blocked 4 postinstalls. Run `bun pm untrusted` for details.
+2026-11-03T07:59:41.815Z	Executing user build command: bun run build
+2026-11-03T07:59:41.933Z	$ opennextjs-cloudflare build
+2026-11-03T07:59:45.075Z	
+2026-11-03T07:59:45.075Z	┌─────────────────────────────┐
+2026-11-03T07:59:45.076Z	│ OpenNext — Cloudflare build │
+2026-11-03T07:59:45.076Z	└─────────────────────────────┘
+2026-11-03T07:59:45.076Z	
+2026-11-03T07:59:45.218Z	App directory: /opt/buildhome/repo
+2026-11-03T07:59:45.218Z	Next.js version : 15.5.28
+2026-11-03T07:59:45.219Z	@opennextjs/cloudflare version: 1.20.15
+2026-11-03T07:59:45.220Z	@opennextjs/aws version: 4.1.14
+2026-11-03T07:59:45.220Z	WARN workerd compatibility_date: 2025-01-01, consider updating your wrangler config to a more recent date to benefit from the latest features and fixes.
+2026-11-03T07:59:45.222Z	
+2026-11-03T07:59:45.222Z	┌─────────────────────────────────┐
+2026-11-03T07:59:45.222Z	│ OpenNext — Building Next.js app │
+2026-11-03T07:59:45.223Z	└─────────────────────────────────┘
+2026-11-03T07:59:45.223Z	
+2026-11-03T07:59:47.088Z	⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2026-11-03T07:59:47.099Z	Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2026-11-03T07:59:47.099Z	This information is used to shape Next.js' roadmap and prioritize features.
+2026-11-03T07:59:47.107Z	You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2026-11-03T07:59:47.108Z	https://nextjs.org/telemetry
+2026-11-03T07:59:47.108Z	
+2026-11-03T07:59:47.223Z	   ▲ Next.js 15.5.28
+2026-11-03T07:59:47.224Z	
+2026-11-03T07:59:47.277Z	   Creating an optimized production build ...
+2026-11-03T08:00:29.165Z	 ✓ Compiled successfully in 36.8s
+2026-11-03T08:00:29.170Z	   Skipping validation of types
+2026-11-03T08:00:29.171Z	   Skipping linting
+2026-11-03T08:00:29.688Z	   Collecting page data ...
+2026-11-03T08:00:38.634Z	   Generating static pages (0/60) ...
+2026-11-03T08:00:52.611Z	RapidAPI key is not configured for sports.
+2026-11-03T08:00:52.612Z	NewsAPI.org key is not configured.
+2026-11-03T08:00:52.804Z	   Generating static pages (15/60) 
+2026-11-03T08:00:56.452Z	   Generating static pages (30/60) 
+2026-11-03T08:00:59.889Z	   Generating static pages (45/60) 
+2026-11-03T08:00:59.890Z	 ✓ Generating static pages (60/60)
+2026-11-03T08:01:08.600Z	   Finalizing page optimization ...
+2026-11-03T08:01:08.601Z	   Collecting build traces ...
+2026-11-03T08:01:17.712Z	
+2026-11-03T08:01:17.717Z	Route (app)                                                      Size  First Load JS
+2026-11-03T08:01:17.718Z	┌ ○ /                                                         1.38 kB         186 kB
+2026-11-03T08:01:17.718Z	├ ○ /_not-found                                                 130 B         103 kB
+2026-11-03T08:01:17.718Z	├ ○ /about                                                    1.07 kB         107 kB
+2026-11-03T08:01:17.718Z	├ ○ /admin                                                    30.7 kB         223 kB
+2026-11-03T08:01:17.718Z	├ ƒ /api/admin/login                                            130 B         103 kB
+2026-11-03T08:01:17.718Z	├ ○ /blog                                                     1.08 kB         107 kB
+2026-11-03T08:01:17.719Z	├ ● /blog/[slug]                                              1.07 kB         107 kB
+2026-11-03T08:01:17.719Z	├   ├ /blog/5-tips-for-safely-joining-public-whatsapp-groups
+2026-11-03T08:01:17.720Z	├   ├ /blog/how-to-grow-your-whatsapp-community-in-2024
+2026-11-03T08:01:17.720Z	├   ├ /blog/whatsapp-channels-vs-groups-whats-the-difference
+2026-11-03T08:01:17.720Z	├   └ [+4 more paths]
+2026-11-03T08:01:17.720Z	├ ● /category/[category]                                        186 B         180 kB
+2026-11-03T08:01:17.721Z	├   ├ /category/adult-18-plus
+2026-11-03T08:01:17.721Z	├   ├ /category/art-design
+2026-11-03T08:01:17.721Z	├   ├ /category/business
+2026-11-03T08:01:17.721Z	├   └ [+21 more paths]
+2026-11-03T08:01:17.721Z	├ ○ /contact                                                  4.74 kB         150 kB
+2026-11-03T08:01:17.721Z	├ ● /country/[country]                                          186 B         180 kB
+2026-11-03T08:01:17.721Z	├   ├ /country/af
+2026-11-03T08:01:17.721Z	├   ├ /country/au
+2026-11-03T08:01:17.721Z	├   ├ /country/bd
+2026-11-03T08:01:17.721Z	├   └ [+12 more paths]
+2026-11-03T08:01:17.721Z	├ ƒ /group/invite/[id]                                        7.67 kB         306 kB
+2026-11-03T08:01:17.721Z	├ ○ /privacy                                                  1.07 kB         107 kB
+2026-11-03T08:01:17.722Z	├ ○ /sitemap.xml                                                130 B         103 kB
+2026-11-03T08:01:17.723Z	├ ○ /submit                                                   2.86 kB         188 kB
+2026-11-03T08:01:17.723Z	├ ƒ /tag/[tag]                                                  186 B         180 kB
+2026-11-03T08:01:17.724Z	└ ○ /terms                                                    1.07 kB         107 kB
+2026-11-03T08:01:17.724Z	+ First Load JS shared by all                                  103 kB
+2026-11-03T08:01:17.724Z	  ├ chunks/255-b1e2483a7e02feee.js                            46.6 kB
+2026-11-03T08:01:17.724Z	  ├ chunks/4bd1b696-c023c6e3521b1417.js                       54.2 kB
+2026-11-03T08:01:17.724Z	  └ other shared chunks (total)                               1.92 kB
+2026-11-03T08:01:17.724Z	
+2026-11-03T08:01:17.725Z	
+2026-11-03T08:01:17.725Z	○  (Static)   prerendered as static content
+2026-11-03T08:01:17.725Z	●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+2026-11-03T08:01:17.725Z	ƒ  (Dynamic)  server-rendered on demand
+2026-11-03T08:01:17.725Z	
+2026-11-03T08:01:17.889Z	
+2026-11-03T08:01:17.889Z	┌──────────────────────────────┐
+2026-11-03T08:01:17.889Z	│ OpenNext — Generating bundle │
+2026-11-03T08:01:17.889Z	└──────────────────────────────┘
+2026-11-03T08:01:17.889Z	
+2026-11-03T08:01:17.991Z	Bundling middleware function...
+2026-11-03T08:01:18.134Z	Bundling static assets...
+2026-11-03T08:01:18.145Z	Bundling cache assets...
+2026-11-03T08:01:18.314Z	Building server function: default...
+2026-11-03T08:01:34.046Z	Applying code patches: 15.278s
+2026-11-03T08:01:34.551Z	# copyPackageTemplateFiles
+2026-11-03T08:01:34.554Z	⚙️ Bundling the OpenNext server...
+2026-11-03T08:01:34.554Z	
+2026-11-03T08:01:40.009Z	Worker saved in `.open-next/worker.js` 🚀
+2026-11-03T08:01:40.009Z	
+2026-11-03T08:01:40.009Z	OpenNext build complete.
+2026-11-03T08:01:40.237Z	Success: Build command completed
+2026-11-03T08:01:40.432Z	Executing user deploy command: npx wrangler deploy
+2026-11-03T08:01:42.799Z	
+2026-11-03T08:01:42.800Z	 ⛅️ wrangler 4.156.0
+2026-11-03T08:01:42.800Z	────────────────────
+2026-11-03T08:01:42.882Z	OpenNext project detected, calling `opennextjs-cloudflare deploy`
+2026-11-03T08:01:47.593Z	
+2026-11-03T08:01:47.593Z	┌──────────────────────────────┐
+2026-11-03T08:01:47.593Z	│ OpenNext — Cloudflare deploy │
+2026-11-03T08:01:47.593Z	└──────────────────────────────┘
+2026-11-03T08:01:47.593Z	
+2026-11-03T08:01:48.419Z	Incremental cache does not need populating
+2026-11-03T08:01:48.420Z	Tag cache does not need populating
+2026-11-03T08:01:50.323Z	
+2026-11-03T08:01:50.323Z	 ⛅️ wrangler 4.156.0 (update available 4.156.2)
+2026-11-03T08:01:50.324Z	───────────────────────────────────────────────
+2026-11-03T08:01:50.368Z	
+2026-11-03T08:01:50.368Z	Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+2026-11-03T08:01:53.513Z	🌀 Building list of assets...
+2026-11-03T08:01:53.520Z	✨ Read 103 files from the assets directory /opt/buildhome/repo/.open-next/assets
+2026-11-03T08:01:53.584Z	🌀 Starting asset upload...
+2026-11-03T08:01:55.016Z	🌀 Found 64 new or modified static assets to upload. Proceeding with upload...
+2026-11-03T08:01:55.017Z	+ /BUILD_ID
+2026-11-03T08:01:55.017Z	+ /_next/static/chunks/app/sitemap.xml/route-bccd1197efe2c979.js
+2026-11-03T08:01:55.017Z	+ /_next/static/chunks/app/tag/[tag]/page-4fcc2afb67c1dc2c.js
+2026-11-03T08:01:55.017Z	+ /_next/static/chunks/main-app-f5eb2db3dd2733c3.js
+2026-11-03T08:01:55.018Z	+ /_next/static/chunks/app/terms/page-81272705e8ed4646.js
+2026-11-03T08:01:55.018Z	+ /_next/static/chunks/app/page-2d46a3ea541a1568.js
+2026-11-03T08:01:55.018Z	+ /_next/static/chunks/619-ba102abea3e3d0e4.js
+2026-11-03T08:01:55.018Z	+ /_next/static/media/c5fe6dc8356a8c31-s.woff2
+2026-11-03T08:01:55.018Z	+ /_next/static/chunks/app/contact/page-18aa2e82603a8b36.js
+2026-11-03T08:01:55.018Z	+ /_next/static/chunks/168-0c7cc981da891932.js
+2026-11-03T08:01:55.021Z	+ /_next/static/chunks/400-afb15509aade6a76.js
+2026-11-03T08:01:55.021Z	+ /_next/static/chunks/505-7e3989f7318a7b0b.js
+2026-11-03T08:01:55.021Z	+ /_next/static/chunks/app/layout-91a0717ad8d7a603.js
+2026-11-03T08:01:55.021Z	+ /_next/static/media/e4af272ccee01ff0-s.p.woff2
+2026-11-03T08:01:55.021Z	+ /_next/static/css/23d71661351acb00.css
+2026-11-03T08:01:55.021Z	+ /assets/aistudio/Screenshot_20261102-081912_8901942c.jpg
+2026-11-03T08:01:55.021Z	+ /_next/static/chunks/ae6eea6a-13ee3d2d724dbaf9.js
+2026-11-03T08:01:55.022Z	+ /_next/static/chunks/polyfills-42372ed130431b0a.js
+2026-11-03T08:01:55.022Z	+ /_next/static/chunks/framework-a6e0b7e30f98059a.js
+2026-11-03T08:01:55.022Z	+ /favicon.ico
+2026-11-03T08:01:55.022Z	+ /assets/aistudio/Screenshot_20261102-082206_033e5f17.jpg
+2026-11-03T08:01:55.022Z	+ /assets/aistudio/Screenshot_20261102-074832_404b4234.jpg
+2026-11-03T08:01:55.022Z	+ /ads.txt
+2026-11-03T08:01:55.022Z	+ /_next/static/Ph_an6M5qr23wucGdNr3M/_ssgManifest.js
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/pages/_error-5e0018e2ff5b8770.js
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/app/global-error-1161a4a34032df72.js
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/app/blog/page-d6f83405c7cd5657.js
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/app/error-01a55cb97ffc64f0.js
+2026-11-03T08:01:55.023Z	+ /_next/static/media/df0a9ae256c0569c-s.woff2
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/97-80eba7e6f5da9b7b.js
+2026-11-03T08:01:55.023Z	+ /assets/aistudio/image_ea29c170.png
+2026-11-03T08:01:55.023Z	+ /_next/static/media/21350d82a1f187e9-s.woff2
+2026-11-03T08:01:55.023Z	+ /_next/static/chunks/248-36736989a230f8ac.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/app/group/invite/[id]/page-3c4e97134978b4dc.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/432-2df27a9ff83c3e30.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/812-dd27038c6f2bc012.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/app/admin/page-87d2074312343e7c.js
+2026-11-03T08:01:55.024Z	+ /assets/aistudio/Screenshot_20261102-075739_525fb2cc.jpg
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/276-6a9c788fa06cee14.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/main-d27d7020d06a6200.js
+2026-11-03T08:01:55.024Z	+ /_next/static/chunks/4bd1b696-c023c6e3521b1417.js
+2026-11-03T08:01:55.024Z	+ /assets/aistudio/Screenshot_20261102-082304_4efd6852.jpg
+2026-11-03T08:01:55.024Z	+ /assets/aistudio/Screenshot_20261102-074755_4e5a0ad3.jpg
+2026-11-03T08:01:55.024Z	+ /robots.txt
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/app/not-found-df45b89e86b1f90d.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/pages/_app-7d307437aca18ad4.js
+2026-11-03T08:01:55.025Z	+ /_next/static/Ph_an6M5qr23wucGdNr3M/_buildManifest.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/webpack-bc5fcf7a0dacbe59.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/app/submit/page-bb738d683e16374c.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/535-709f9a6b44c64567.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/711-55c79e216bfbc2a4.js
+2026-11-03T08:01:55.025Z	+ /_next/static/chunks/239-e57668d7a954ceda.js
+2026-11-03T08:01:55.026Z	+ /_next/static/media/19cfc7226ec3afaa-s.woff2
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/760-73252e9891727365.js
+2026-11-03T08:01:55.026Z	+ /_next/static/media/ba9851c3c22cd980-s.woff2
+2026-11-03T08:01:55.026Z	+ /assets/aistudio/Screenshot_20261101-101822_f0895e63.jpg
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/169-63e9d8ae706fc3db.js
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/363-3d344f1bc11de2e2.js
+2026-11-03T08:01:55.026Z	+ /_next/static/media/8e9860b6e62d6359-s.woff2
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/804-07f615faf1f69b29.js
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/bc9e92e6-bb615e3e687c98f9.js
+2026-11-03T08:01:55.026Z	+ /_next/static/chunks/255-b1e2483a7e02feee.js
+2026-11-03T08:01:55.027Z	+ /assets/aistudio/Screenshot_20261102-075654_5006763d.jpg
+2026-11-03T08:01:55.027Z	+ /whatsapp_background_official_image.png
+2026-11-03T08:01:58.098Z	Uploaded 21 of 64 assets
+2026-11-03T08:01:58.333Z	Uploaded 43 of 64 assets
+2026-11-03T08:01:58.676Z	Uploaded 64 of 64 assets
+2026-11-03T08:01:58.677Z	✨ Success! Uploaded 64 files (7 already uploaded) (3.65 sec)
+2026-11-03T08:01:58.677Z	
+2026-11-03T08:01:59.090Z	Total Upload: 10669.33 KiB / gzip: 2311.81 KiB
+2026-11-03T08:02:04.043Z	Worker Startup Time: 14 ms
+2026-11-03T08:02:04.045Z	Your Worker has access to the following bindings:
+2026-11-03T08:02:04.045Z	Binding            Resource      
+2026-11-03T08:02:04.045Z	env.ASSETS         Assets        
+2026-11-03T08:02:04.045Z	
+2026-11-03T08:02:04.045Z	Uploaded whatsauplink-aistudio2 (10.67 sec)
+2026-11-03T08:02:04.575Z	Deployed whatsauplink-aistudio2 triggers (0.53 sec)
+2026-11-03T08:02:04.575Z	  https://whatsauplink-aistudio2.syedhamzaalinaqvi4.workers.dev
+2026-11-03T08:02:04.576Z	Current Version ID: 7c8d461c-2e22-4bfb-a4cb-b76d9c35787e
+2026-11-03T08:02:04.682Z	▲ [WARNING] Failed to match Worker name. Your config file is using the Worker name "whatsuplink-ais", but the CI system expected "whatsauplink-aistudio2". Overriding using the CI provided Worker name. Workers Builds connected builds will attempt to open a pull request to resolve this config name mismatch.
+2026-11-03T08:02:04.682Z	
+2026-11-03T08:02:04.682Z	
+2026-11-03T08:02:04.682Z	▲ [WARNING] Because 'workers_dev' is not in your wrangler.jsonc, it will be enabled for this deployment by default.
+2026-11-03T08:02:04.682Z	
+2026-11-03T08:02:04.682Z	  To override this setting, you can disable workers.dev by explicitly setting 'workers_dev = false' in your wrangler.jsonc.
+2026-11-03T08:02:04.683Z	
+2026-11-03T08:02:04.683Z	
+2026-11-03T08:02:04.683Z	▲ [WARNING] Because your 'workers.dev' route is enabled and your 'preview_urls' setting is not in your wrangler.jsonc, Preview URLs will be enabled for this deployment by default.
+2026-11-03T08:02:04.683Z	
+2026-11-03T08:02:04.683Z	  To override this setting, you can disable Preview URLs by explicitly setting 'preview_urls = false' in your wrangler.jsonc.
+2026-11-03T08:02:04.683Z	
+2026-11-03T08:02:04.683Z	
+2026-11-03T08:02:04.683Z	(node:1423) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+2026-11-03T08:02:04.683Z	(Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-03T08:02:04.867Z	Success: Deploy command completed
+2026-11-03T08:02:04.870Z	Uploading to dependency cache
+2026-11-03T08:02:04.876Z	Uploading to build output cache
+2026-11-03T08:02:07.817Z	Success: Build output uploaded to build cache.
+2026-11-03T08:02:16.025Z	Success: Dependencies uploaded to build cache.
+2026-11-03T08:02:16.134Z	✨ Success! Build completed.

@@ -11,16 +11,10 @@ export async function Ticker() {
     items = [];
   }
 
-  const tickerType = items[0]?.type === 'sport' ? 'LIVE' : 'NEWS';
+  const tickerType = items[0]?.type === 'sport' ? 'LIVE' : 'UPDATES';
 
   if (items.length === 0) {
-    return (
-        <div className="bg-card/80 backdrop-blur-sm border-y">
-             <div className="container py-2 text-center text-muted-foreground text-sm">
-                No live sports or news at the moment. Check back later!
-            </div>
-        </div>
-    );
+    return null;
   }
 
   return <TickerClient items={items} tickerType={tickerType} />;

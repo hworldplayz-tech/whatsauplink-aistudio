@@ -18,20 +18,15 @@ const FirebaseContext = createContext<FirebaseContextType | null>(null);
 export const FirebaseProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [services, setServices] = useState<FirebaseContextType | null>(null);
-
-  useEffect(() => {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    const auth = getAuth(app);
-    const firestore = getFirestore(app);
-    setServices({ app, auth, firestore });
-  }, []);
-
-  if (!services) {
-    // You can render a loading indicator here if needed,
-    // but returning null works fine for preventing children from rendering prematurely.
+  const [services] = useState<FirebaseContextType | null>(() => {
+    if (typeof window !== 'undefined') {
+      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+      const auth = getAuth(app);
+      const firestore = getFirestore(app);
+      return { app, auth, firestore };
+    }
     return null;
-  }
+  });
 
   return (
     <FirebaseContext.Provider value={services}>
