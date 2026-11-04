@@ -21,6 +21,12 @@ export type GroupLink = {
   lastSubmittedAt?: string | null;
   totalRating?: number;
   ratingCount?: number;
+  isVerified?: boolean;
+  status?: 'active' | 'full' | 'revoked' | 'reported';
+  reportCount?: number;
+  workingVotes?: number;
+  brokenVotes?: number;
+  lastVerifiedAt?: string | null;
 };
 
 export type Report = {
@@ -141,6 +147,12 @@ export function mapDocToGroupLink(doc: DocumentData): GroupLink {
         lastSubmittedAt: formatTimestamp(data.lastSubmittedAt),
         totalRating: data.totalRating || 0,
         ratingCount: data.ratingCount || 0,
+        isVerified: Boolean(data.isVerified),
+        status: data.status || 'active',
+        reportCount: data.reportCount || 0,
+        workingVotes: data.workingVotes || 0,
+        brokenVotes: data.brokenVotes || 0,
+        lastVerifiedAt: formatTimestamp(data.lastVerifiedAt),
     };
 }
 

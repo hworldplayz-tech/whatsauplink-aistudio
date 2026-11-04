@@ -1,9 +1,10 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, Tag, Share2, Users, Clock, RadioTower, Eye, Star } from 'lucide-react';
+import { ExternalLink, Tag, Share2, Users, Clock, RadioTower, Eye, Star, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,19 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
   const timeAgo = relevantDate
     ? formatDistanceToNow(new Date(relevantDate), { addSuffix: true }).replace('about ', '')
     : 'recently';
+
+  const isRecentlyActive = useMemo(() => {
+    if (!relevantDate) return false;
+    try {
+      const diffMs = Date.now() - new Date(relevantDate).getTime();
+      return diffMs < 48 * 60 * 60 * 1000 && diffMs > -60000;
+    } catch {
+      return false;
+    }
+  }, [relevantDate]);
+
+  const isBroken = group.status === 'revoked' || (group.reportCount ?? 0) >= 2;
+  const isFull = group.status === 'full';
   
   const typeIcon = group.type === 'channel' 
     ? <RadioTower className="h-3 w-3" /> 
@@ -71,6 +85,27 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
             </AvatarFallback>
         </Avatar>
         <h3 className="font-semibold text-sm line-clamp-2 mt-3">{group.title}</h3>
+        
+        {/* Link Quality & Trust Status Badges */}
+        <div className="mt-1 flex items-center justify-center">
+          {isBroken ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 text-[10px] font-semibold">
+              <AlertTriangle className="h-2.5 w-2.5" /> Link Issue
+            </span>
+          ) : isFull ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 text-[10px] font-semibold">
+              <Users className="h-2.5 w-2.5" /> Group Full
+            </span>
+          ) : group.isVerified ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+              <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" /> Verified Link
+            </span>
+          ) : isRecentlyActive ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
+            </span>
+          ) : null}
+        </div>
         
         {showRatings && averageRating > 0 && (
             <div className="mt-2 flex items-center gap-1">
@@ -127,7 +162,28 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
       <div className="flex flex-1 flex-col justify-between">
         <CardHeader className="pt-0 sm:pt-6">
           <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-lg font-semibold">{group.title}</CardTitle>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <CardTitle className="text-lg font-semibold">{group.title}</CardTitle>
+                {isBroken ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 text-[10px] font-semibold">
+                    <AlertTriangle className="h-2.5 w-2.5" /> Link Issue
+                  </span>
+                ) : isFull ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 text-[10px] font-semibold">
+                    <Users className="h-2.5 w-2.5" /> Group Full
+                  </span>
+                ) : group.isVerified ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+                    <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" /> Verified Link
+                  </span>
+                ) : isRecentlyActive ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 {showRatings && averageRating > 0 && (
                     <div className="flex items-center gap-1">

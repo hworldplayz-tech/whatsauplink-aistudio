@@ -23,10 +23,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 
+import { useEffect } from 'react';
+
 const REPORT_REASONS = [
-  'Broken Link',
-  'Spam or Advertisement',
-  'Inappropriate Content',
+  'Invite Link Revoked / Expired',
+  'Group is Full (1024 members limit)',
+  'Spam or Phishing / Scams',
+  'Inappropriate or Harmful Content',
   'Different from Description',
   'Other',
 ];
@@ -52,18 +55,25 @@ type GroupReportDialogProps = {
   group: GroupLink;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  initialReason?: string;
 };
 
-export function GroupReportDialog({ group, isOpen, onOpenChange }: GroupReportDialogProps) {
+export function GroupReportDialog({ group, isOpen, onOpenChange, initialReason }: GroupReportDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, startSubmitting] = useTransition();
   const form = useForm<ReportFormValues>({ 
     resolver: zodResolver(reportSchema),
     defaultValues: {
-        reason: '',
+        reason: initialReason || '',
         otherReason: '',
     }
   });
+
+  useEffect(() => {
+    if (initialReason && isOpen) {
+      form.setValue('reason', initialReason);
+    }
+  }, [initialReason, isOpen, form]);
 
   const selectedReason = form.watch('reason');
 

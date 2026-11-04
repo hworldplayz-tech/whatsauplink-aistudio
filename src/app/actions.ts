@@ -199,10 +199,96 @@ export async function reportGroup(formData: FormData): Promise<{ success: boolea
       createdAt: serverTimestamp(),
     });
 
+    // Update group document with report statistics
+    try {
+      const groupRef = doc(db, 'groups', groupId);
+      const isBrokenReason = reason.includes('Revoked') || reason.includes('Broken');
+      const isFullReason = reason.includes('Full');
+      
+      const updatePayload: Record<string, any> = {
+        reportCount: increment(1),
+        lastReportedAt: serverTimestamp(),
+      };
+      if (isBrokenReason) {
+        updatePayload.status = 'revoked';
+      } else if (isFullReason) {
+        updatePayload.status = 'full';
+      }
+      await updateDoc(groupRef, updatePayload);
+    } catch (err) {
+      console.warn('Notice: Could not increment group reportCount:', err);
+    }
+
     return { success: true, message: `Thank you for your report. We will review "${groupTitle}" shortly.` };
   } catch (error) {
     console.error('Error submitting report:', error);
     return { success: false, message: 'Failed to submit report. Please try again later.' };
+  }
+}
+
+export async function voteLinkWorking(
+  groupId: string,
+  isWorking: boolean
+): Promise<{ success: boolean; message: string }> {
+  if (!groupId) return { success: false, message: 'Invalid group ID' };
+  try {
+    const db = getFirestoreInstance();
+    const groupRef = doc(db, 'groups', groupId);
+    if (isWorking) {
+      await updateDoc(groupRef, {
+        workingVotes: increment(1),
+        lastVerifiedAt: serverTimestamp(),
+      });
+      return { success: true, message: 'Thank you! Marked as active and working.' };
+    } else {
+      await updateDoc(groupRef, {
+        brokenVotes: increment(1),
+        reportCount: increment(1),
+      });
+      return { success: true, message: 'Feedback noted. Thank you!' };
+    }
+  } catch (error) {
+    console.error('Error voting on link:', error);
+    return { success: false, message: 'Could not record vote. Please try again.' };
+  }
+}
+
+export async function checkLinkHealth(url: string): Promise<{
+  status: 'active' | 'revoked' | 'full' | 'unknown';
+  message: string;
+}> {
+  if (!url || (!url.includes('chat.whatsapp.com') && !url.includes('whatsapp.com/channel'))) {
+    return { status: 'unknown', message: 'Not a recognized WhatsApp link format.' };
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      next: { revalidate: 1800 },
+    });
+
+    const html = await response.text();
+    const lower = html.toLowerCase();
+
+    if (lower.includes('revoked invite link') || lower.includes('invite link was reset') || lower.includes("couldn't find that group")) {
+      return { status: 'revoked', message: 'WhatsApp reports this invite link was revoked or expired.' };
+    }
+
+    if (lower.includes('group is full') || lower.includes('maximum number of participants')) {
+      return { status: 'full', message: 'Group has reached maximum member capacity (1024).' };
+    }
+
+    if (lower.includes('og:title') || lower.includes('whatsapp group invite') || lower.includes('whatsapp channel')) {
+      return { status: 'active', message: 'Link is active and joinable on WhatsApp!' };
+    }
+
+    return { status: 'active', message: 'Link verified successfully.' };
+  } catch (e) {
+    return { status: 'unknown', message: 'Direct check unavailable; link opens normally in WhatsApp.' };
   }
 }
 

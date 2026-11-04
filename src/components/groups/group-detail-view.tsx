@@ -19,6 +19,11 @@ import {
   Star,
   Loader2,
   Home,
+  ThumbsUp,
+  ThumbsDown,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import type { GroupLink, Category, Country, ModerationSettings } from '@/lib/data';
 import type { AdSettings } from '@/lib/ad-types';
@@ -36,13 +41,13 @@ import { GroupCard } from '@/components/groups/group-card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SharePopover } from './share-popover';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useFirestore } from '@/firebase/provider';
 import { doc, increment, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { GroupReportDialog } from './group-report-dialog';
 import { StarRating } from './star-rating';
-import { submitRating } from '@/app/actions';
+import { submitRating, voteLinkWorking, checkLinkHealth } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { getModerationSettings } from '@/lib/admin-settings';
 import { Breadcrumbs, type BreadcrumbItem } from '../layout/breadcrumbs';
@@ -59,6 +64,7 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
   const [group, setGroup] = useState(initialGroup);
   const [detailUrl, setDetailUrl] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [initialReportReason, setInitialReportReason] = useState<string>('');
   const [settings, setSettings] = useState<ModerationSettings | null>(null);
   const { firestore } = useFirestore();
   const router = useRouter();
@@ -68,10 +74,36 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [hasRated, setHasRated] = useState(false);
 
+  // Link quality & trust states
+  const [workingVotes, setWorkingVotes] = useState<number>(initialGroup.workingVotes || 0);
+  const [brokenVotes, setBrokenVotes] = useState<number>(initialGroup.brokenVotes || 0);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
+  const [isCheckingHealth, setIsCheckingHealth] = useState<boolean>(false);
+  const [healthCheckResult, setHealthCheckResult] = useState<{ status: 'active' | 'revoked' | 'full' | 'unknown'; message: string } | null>(null);
+
+  const relevantDate = group.lastSubmittedAt || group.createdAt;
+  const isRecentlyActive = useMemo(() => {
+    if (!relevantDate) return false;
+    try {
+      const diffMs = Date.now() - new Date(relevantDate).getTime();
+      return diffMs < 48 * 60 * 60 * 1000 && diffMs > -60000;
+    } catch {
+      return false;
+    }
+  }, [relevantDate]);
+
+  const isBroken = group.status === 'revoked' || (group.reportCount ?? 0) >= 2;
+  const isFull = group.status === 'full';
 
   useEffect(() => {
     // Ensure this runs only on the client
     setDetailUrl(window.location.href);
+    
+    // Check if user already voted on this link in current session
+    if (typeof window !== 'undefined' && group.id) {
+      const voted = sessionStorage.getItem(`voted_group_${group.id}`);
+      if (voted) setHasVoted(true);
+    }
     
     // Fetch moderation settings on the client
     async function fetchSettings() {
@@ -79,11 +111,57 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
         setSettings(fetchedSettings);
     }
     fetchSettings();
-  }, []);
+  }, [group.id]);
   
   useEffect(() => {
     setGroup(initialGroup);
+    setWorkingVotes(initialGroup.workingVotes || 0);
+    setBrokenVotes(initialGroup.brokenVotes || 0);
   }, [initialGroup]);
+
+  const handleVote = async (isWorking: boolean) => {
+    if (hasVoted) return;
+
+    if (!isWorking) {
+      // Prompt report dialog directly with 'Invite Link Revoked / Expired'
+      setInitialReportReason('Invite Link Revoked / Expired');
+      setIsReportOpen(true);
+    }
+
+    try {
+      setHasVoted(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`voted_group_${group.id}`, 'true');
+      }
+
+      if (isWorking) {
+        setWorkingVotes(prev => prev + 1);
+      } else {
+        setBrokenVotes(prev => prev + 1);
+      }
+
+      const res = await voteLinkWorking(group.id, isWorking);
+      toast({
+        title: isWorking ? 'Thank You!' : 'Feedback Recorded',
+        description: res.message,
+      });
+    } catch (err) {
+      console.error('Failed to submit link vote:', err);
+    }
+  };
+
+  const handleCheckLinkHealth = async () => {
+    if (isCheckingHealth || !group.link) return;
+    setIsCheckingHealth(true);
+    try {
+      const result = await checkLinkHealth(group.link);
+      setHealthCheckResult(result);
+    } catch (e) {
+      setHealthCheckResult({ status: 'unknown', message: 'Could not verify link right now. You can still test joining directly.' });
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
 
   const handleJoinClick = () => {
     if (firestore && group.id) {
@@ -298,6 +376,81 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
                   )}
 
 
+                  {/* Link Trust & Quality Verification Card */}
+                  <div className={`rounded-xl border p-4 my-6 transition-colors ${
+                    isBroken
+                      ? 'border-red-300 dark:border-red-900 bg-red-50/60 dark:bg-red-950/30'
+                      : isFull
+                      ? 'border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30'
+                      : 'border-emerald-500/25 bg-emerald-50/50 dark:bg-emerald-950/20'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2.5 rounded-full shrink-0 ${
+                          isBroken
+                            ? 'bg-red-100 text-red-600 dark:bg-red-950/80 dark:text-red-400'
+                            : isFull
+                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/80 dark:text-amber-400'
+                            : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400'
+                        }`}>
+                          {isBroken ? <AlertTriangle className="h-5 w-5" /> : isFull ? <Users className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm sm:text-base text-foreground">
+                              {isBroken ? 'Link Issue Reported' : isFull ? 'Group Capacity Full' : 'Active & Verified Invite Link'}
+                            </span>
+                            {isRecentlyActive && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300 rounded-full px-2 py-0.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {isBroken
+                              ? 'Some users reported trouble joining this group. If it works for you, please vote below.'
+                              : isFull
+                              ? 'This group has reached its maximum participant capacity (1,024 members).'
+                              : 'Real WhatsApp invite link verified for member activity and community guidelines.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCheckLinkHealth}
+                        disabled={isCheckingHealth}
+                        className="text-xs h-8 shrink-0 self-start sm:self-center gap-1.5"
+                      >
+                        {isCheckingHealth ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                        )}
+                        <span>{isCheckingHealth ? 'Checking...' : 'Check Link Now'}</span>
+                      </Button>
+                    </div>
+
+                    {healthCheckResult && (
+                      <div className={`mt-3 pt-3 border-t text-xs flex items-center gap-2 font-medium ${
+                        healthCheckResult.status === 'revoked'
+                          ? 'text-destructive'
+                          : healthCheckResult.status === 'full'
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-emerald-600 dark:text-emerald-400'
+                      }`}>
+                        {healthCheckResult.status === 'active' ? (
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                        )}
+                        <span>{healthCheckResult.message}</span>
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-base text-foreground/80 whitespace-pre-wrap mt-6">
                     {group.description}
                   </p>
@@ -316,31 +469,69 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
                   {/* In-Card Ad before Join Button */}
                   <AdSlot placement="group_detail_bottom" adSettings={adSettings} className="mt-6" />
                 </CardContent>
-                <CardFooter className="flex-wrap gap-2">
-                  <Button asChild className="w-full text-lg py-6 flex-1 sm:w-auto">
-                    <a
-                      href={group.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleJoinClick}
-                    >
-                      Join Group Link
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </a>
-                  </Button>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    {detailUrl && (
-                        <SharePopover title={group.title} url={detailUrl}>
-                        <Button variant="outline" className="w-full text-lg py-6 sm:w-auto">
-                            <Share2 className="mr-2 h-5 w-5" />
-                            Share
-                        </Button>
-                        </SharePopover>
-                    )}
-                     <Button variant="destructive" className="w-full text-lg py-6 sm:w-auto" onClick={() => setIsReportOpen(true)}>
-                        <Flag className="mr-2 h-5 w-5" />
-                        Report
+                <CardFooter className="flex-col gap-4 items-stretch">
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild className="w-full text-lg py-6 flex-1 sm:w-auto bg-[#25D366] hover:bg-[#20ba59] text-white">
+                      <a
+                        href={group.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={handleJoinClick}
+                      >
+                        Join WhatsApp {group.type === 'channel' ? 'Channel' : 'Group'}
+                        <ExternalLink className="ml-2 h-4 w-4" />
+                      </a>
                     </Button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      {detailUrl && (
+                          <SharePopover title={group.title} url={detailUrl}>
+                          <Button variant="outline" className="w-full text-lg py-6 sm:w-auto">
+                              <Share2 className="mr-2 h-5 w-5" />
+                              Share
+                          </Button>
+                          </SharePopover>
+                      )}
+                       <Button 
+                        variant="destructive" 
+                        className="w-full text-lg py-6 sm:w-auto" 
+                        onClick={() => {
+                          setInitialReportReason('');
+                          setIsReportOpen(true);
+                        }}
+                      >
+                          <Flag className="mr-2 h-5 w-5" />
+                          Report
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Community Trust & Link Working Feedback */}
+                  <div className="rounded-lg bg-muted/60 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Did this WhatsApp invite link work for you?</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleVote(true)}
+                        disabled={hasVoted}
+                        className="h-8 gap-1.5 text-xs hover:text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Yes, Works ({workingVotes})</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleVote(false)}
+                        disabled={hasVoted}
+                        className="h-8 gap-1.5 text-xs hover:text-destructive hover:border-destructive hover:bg-red-50 dark:hover:bg-red-950/40"
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5 text-red-500" />
+                        <span>Broken / Full ({brokenVotes})</span>
+                      </Button>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
@@ -430,6 +621,7 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
         group={group}
         isOpen={isReportOpen}
         onOpenChange={setIsReportOpen}
+        initialReason={initialReportReason}
       />
     </div>
   );

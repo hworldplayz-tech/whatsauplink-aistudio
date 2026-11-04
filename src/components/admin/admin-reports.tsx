@@ -98,7 +98,7 @@ export function AdminReports({ reports }: AdminReportsProps) {
                         <Badge variant="destructive">{report.reason}</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell suppressHydrationWarning>
                       {report.createdAt ? formatDistanceToNow(new Date(report.createdAt), { addSuffix: true }) : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
