@@ -15,11 +15,11 @@ export default async function PrivacyPolicyPage() {
           <div className="mx-auto max-w-3xl space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Privacy Policy</h1>
-              <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
+              <p className="text-muted-foreground" suppressHydrationWarning>Last updated: November 2026</p>
             </div>
             <div className="prose max-w-none text-muted-foreground">
               <p>
-                Welcome to WhatsUpLink. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
+                Welcome to Groupsor. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
               </p>
               
               <h2 className="text-2xl font-bold mt-8 mb-4 text-foreground">Information We Collect</h2>

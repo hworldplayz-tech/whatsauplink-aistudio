@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const countryInfo = allCountries.find(c => c.value === resolvedParams.country);
     const countryLabel = countryInfo ? countryInfo.label : (resolvedParams.country || '').toUpperCase();
 
-    const title = `${countryLabel} WhatsApp Group Links | WhatsUpLink`;
+    const title = `${countryLabel} WhatsApp Group Links | Groupsor`;
     const description = `Find and join ${countryLabel} WhatsApp group links. The best directory for WhatsApp groups and channels from ${countryLabel}.`;
 
     return {
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch (e) {
     return {
-      title: 'WhatsApp Group Links | WhatsUpLink',
+      title: 'WhatsApp Group Links | Groupsor',
       description: 'Discover active WhatsApp groups and channels.',
     };
   }
@@ -114,7 +114,7 @@ export default async function CountryPage({ params }: Props) {
 
   // Dynamic SEO Content
   const seoTitle = `Top Active WhatsApp Group Links in ${countryLabel}`;
-  const seoContent = `Looking for active WhatsApp group links from ${countryLabel}? You've found the ultimate resource. WhatsUpLink offers the largest, most up-to-date list of active group links for ${countryLabel}. Whether you're searching for local community groups, business networking, or entertainment, our active WhatsApp link directory is your best bet. All links are verified to ensure you're joining active and relevant groups from ${countryLabel}. Explore the best active WhatsApp group links today!`;
+  const seoContent = `Looking for active WhatsApp group links from ${countryLabel}? You've found the ultimate resource. Groupsor offers the largest, most up-to-date list of active group links for ${countryLabel}. Whether you're searching for local community groups, business networking, or entertainment, our active WhatsApp link directory is your best bet. All links are verified to ensure you're joining active and relevant groups from ${countryLabel}. Explore the best active WhatsApp group links today!`;
 
   return (
     <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>

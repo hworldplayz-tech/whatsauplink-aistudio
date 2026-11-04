@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${post.title} | WhatsUpLink Blog`,
+    title: `${post.title} | Groupsor Blog`,
     description: post.description,
     openGraph: {
         title: post.title,

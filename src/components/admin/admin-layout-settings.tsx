@@ -191,7 +191,7 @@ export function AdminLayoutSettings({ initialSettings, onSettingsChange }: Admin
                                     <FormItem>
                                     <FormLabel>SEO Content</FormLabel>
                                     <FormControl>
-                                        <Textarea {...field} placeholder="Welcome to WhatsUpLink..." rows={10} />
+                                        <Textarea {...field} placeholder="Welcome to Groupsor..." rows={10} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>

@@ -108,14 +108,14 @@ export function Header({
         <Link href="/" className="flex items-center gap-2 mb-4" onClick={() => setIsMobileMenuOpen(false)}>
             <Image
               src={finalLogoUrl}
-              alt="WhatsUpLink Logo"
+              alt="Groupsor Logo"
               width={36}
               height={36}
               className="h-9 w-9"
               unoptimized
             />
-            <h1 className="text-2xl font-bold tracking-tighter text-foreground">
-                WhatsUp<span className="text-primary">Link</span>
+            <h1 className="text-2xl font-bold tracking-tighter">
+                <span className="text-gray-900 dark:text-white">Group</span><span className="text-[#25D366]">sor</span>
             </h1>
         </Link>
         <nav className="flex flex-col gap-1 text-lg font-medium">
@@ -190,14 +190,14 @@ export function Header({
           <Link href="/" className="flex items-center gap-2">
              <Image
               src={finalLogoUrl}
-              alt="WhatsUpLink Logo"
+              alt="Groupsor Logo"
               width={36}
               height={36}
               className="h-9 w-9 object-contain"
               unoptimized
             />
-            <h1 className="text-2xl font-bold tracking-tighter text-foreground">
-              WhatsUp<span className="text-primary">Link</span>
+            <h1 className="text-2xl font-bold tracking-tighter">
+              <span className="text-gray-900 dark:text-white">Group</span><span className="text-[#25D366]">sor</span>
             </h1>
           </Link>
           

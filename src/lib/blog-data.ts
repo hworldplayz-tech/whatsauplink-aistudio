@@ -19,7 +19,7 @@ export const posts: Post[] = [
 <p>Public WhatsApp groups are a fantastic resource for connecting with communities, sharing hobbies, and staying informed. However, since your phone number and profile picture are visible to all members, it's crucial to prioritize your safety and privacy. Here are five essential tips to follow before and after you join a public WhatsApp group link.</p>
 
 <h3>1. Review the Group Information Before Joining</h3>
-<p>Before clicking that join link, take a moment to review all the available information on WhatsUpLink. Read the group's title, description, and check its category and country. Does it align with your interests? A well-described group is often a sign of a well-moderated community. If the description is vague or suspicious, it might be best to avoid it.</p>
+<p>Before clicking that join link, take a moment to review all the available information on Groupsor. Read the group's title, description, and check its category and country. Does it align with your interests? A well-described group is often a sign of a well-moderated community. If the description is vague or suspicious, it might be best to avoid it.</p>
 
 <h3>2. Use a Privacy-Focused Profile Picture and Name</h3>
 <p>Your WhatsApp profile is visible to everyone in a group. To protect your identity, avoid using a personal photo that clearly shows your face. Instead, consider using an avatar, a landscape photo, or something more generic. Similarly, you don't have to use your full real name. A nickname or a first name is often sufficient and helps protect your privacy from strangers.</p>
@@ -37,7 +37,7 @@ export const posts: Post[] = [
 <p>Once you're in a group, be wary of links and files shared by members you don't know. Malicious links can lead to phishing websites designed to steal your information, and files could contain malware. As a general rule, don't click on suspicious links or download files from unknown sources. If a message seems too good to be true (like a free giveaway), it probably is.</p>
 
 <h3>5. Observe and Don't Overshare Personal Information</h3>
-<p>When you first join a group, take some time to observe the conversation and get a feel for the community. Are the members respectful? Is the admin active? Avoid immediately sharing sensitive personal information like your home address, email, workplace, or financial details. Build trust with the community over time before sharing anything you wouldn't want to be public. If you ever feel uncomfortable or notice suspicious activity, don't hesitate to leave the group and report it to the group admin or to us at WhatsUpLink.</p>
+<p>When you first join a group, take some time to observe the conversation and get a feel for the community. Are the members respectful? Is the admin active? Avoid immediately sharing sensitive personal information like your home address, email, workplace, or financial details. Build trust with the community over time before sharing anything you wouldn't want to be public. If you ever feel uncomfortable or notice suspicious activity, don't hesitate to leave the group and report it to the group admin or to us at Groupsor.</p>
 <p>By following these simple tips, you can enjoy the benefits of public WhatsApp communities while keeping your personal information safe and secure. Happy connecting!</p>
     `,
   },
@@ -58,8 +58,8 @@ export const posts: Post[] = [
   <li><strong>High-Quality Icon:</strong> A clean, relevant group icon makes your group look professional and trustworthy.</li>
 </ul>
 
-<h3>2. Submit Your Group to Directories like WhatsUpLink</h3>
-<p>One of the most effective ways to get discovered is to list your group on a public directory. Submitting your group to a site like WhatsUpLink exposes it to thousands of users who are actively searching for new communities to join. When you submit, make sure to:</p>
+<h3>2. Submit Your Group to Directories like Groupsor</h3>
+<p>One of the most effective ways to get discovered is to list your group on a public directory. Submitting your group to a site like Groupsor exposes it to thousands of users who are actively searching for new communities to join. When you submit, make sure to:</p>
 <ul>
   <li>Choose the most relevant category and country.</li>
   <li>Add descriptive tags to help users find your group through search.</li>
@@ -126,7 +126,7 @@ export const posts: Post[] = [
     <li><strong>Choose a Group if:</strong> You want to build a tight-knit community, foster discussion, and allow all members to interact with each other.</li>
     <li><strong>Choose a Channel if:</strong> You want to broadcast information to a large audience, maintain follower privacy, and control the conversation completely.</li>
 </ul>
-<p>On WhatsUpLink, you can find and submit links for both Groups and Channels! Just select the correct type on the submission form to help users find exactly what they're looking for.</p>
+<p>On Groupsor, you can find and submit links for both Groups and Channels! Just select the correct type on the submission form to help users find exactly what they're looking for.</p>
     `,
   },
   {
@@ -158,7 +158,7 @@ export const posts: Post[] = [
 <p><strong>Red Flag:</strong> An unexpected and urgent request for money is a major warning sign.</p>
 <p><strong>How to Avoid:</strong> Verify the request through another method. Call the person on the phone number you have saved for them to confirm it's really them. Never send money based on a text message alone.</p>
 
-<p>Your safety is paramount. If you encounter any of these scams in a group you found on WhatsUpLink, please leave the group and use our "Report" feature so we can investigate. Stay vigilant and enjoy your communities safely!</p>
+<p>Your safety is paramount. If you encounter any of these scams in a group you found on Groupsor, please leave the group and use our "Report" feature so we can investigate. Stay vigilant and enjoy your communities safely!</p>
     `,
   },
   {
@@ -168,7 +168,7 @@ export const posts: Post[] = [
     date: '2024-08-03',
     published: true,
     content: `
-<p>WhatsApp groups are a vibrant way to connect with people who share your passions. With thousands of groups available, where do you start? Here are the top 5 most popular categories on WhatsUpLink that are buzzing with activity and have something for everyone.</p>
+<p>WhatsApp groups are a vibrant way to connect with people who share your passions. With thousands of groups available, where do you start? Here are the top 5 most popular categories on Groupsor that are buzzing with activity and have something for everyone.</p>
 
 <h3>1. Gaming (PUBG, Freefire, and More)</h3>
 <p>It's no surprise that gaming communities are at the top of the list. These groups are hubs for players to find teammates, discuss strategies, and share their best gameplay moments.</p>
@@ -202,7 +202,7 @@ export const posts: Post[] = [
 <p>Sometimes the best connections are the ones closest to home. Community groups connect you with people in your city or neighborhood.</p>
 <ul>
     <li><strong>What to Expect:</strong> Local news and events, buy-and-sell marketplaces, recommendations for local services, and general community support.</li>
-    <li><strong>How to Find:</strong> Search for your city or country on WhatsUpLink to discover groups near you.</li>
+    <li><strong>How to Find:</strong> Search for your city or country on Groupsor to discover groups near you.</li>
 </ul>
 <p>Ready to dive in? Head over to our homepage and use the filters to explore these categories and find your next favorite community!</p>
     `,

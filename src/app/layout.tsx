@@ -16,6 +16,7 @@ import Script from 'next/script';
 import { AdSlot } from '@/components/ads/ad-slot';
 import { PopupAdModal, StickyBottomAdBar } from '@/components/ads/popup-ad';
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
+import Link from 'next/link';
 
 const inter = Inter({ 
   subsets: ['latin'], 
@@ -27,27 +28,27 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const layoutSettings = await getLayoutSettings();
     const seoSettings = layoutSettings?.seoSettings || {
-      siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
-      metaDescription: "The ultimate directory for WhatsApp group links. Discover and join groups for family, friends, USA communities, entertainment, PUBG, Freefire, adult topics, and more. Share your own WhatsApp group link today!",
-      metaKeywords: "whatsapp group links, whatsapp groups, usa whatsapp group, family whatsapp group link, adult whatsapp group links"
+      siteTitle: "Groupsor - The largest Collection of Whatsapp groups and channels",
+      metaDescription: "The largest Collection of Whatsapp groups and channels. Discover and join active groups for family, friends, USA communities, entertainment, gaming, and more. Share your own WhatsApp group link today!",
+      metaKeywords: "whatsapp group links, whatsapp groups, whatsapp channels, groupsor, active whatsapp groups"
     };
     const logoUrl = layoutSettings?.logoUrl || '/whatsuplink_logo_and_favicon_without_background.png';
 
-    const title = seoSettings.siteTitle || "Join active whatsapp group links | submit your group - Whatuplink";
-    const description = seoSettings.metaDescription || "The ultimate directory for WhatsApp group links.";
+    const title = seoSettings.siteTitle || "Groupsor - The largest Collection of Whatsapp groups and channels";
+    const description = seoSettings.metaDescription || "The largest Collection of Whatsapp groups and channels.";
 
     return {
-      metadataBase: new URL('https://whatsuplink.online'),
+      metadataBase: new URL('https://groupsor.co.uk'),
       title: {
         default: title,
-        template: '%s - Whatsuplink',
+        template: '%s - Groupsor',
       },
       description: description,
       openGraph: {
         title: title,
         description: description,
-        url: 'https://whatsuplink.online',
-        siteName: 'WhatsUpLink',
+        url: 'https://groupsor.co.uk',
+        siteName: 'Groupsor',
         locale: 'en_US',
         type: 'website',
         images: [logoUrl],
@@ -72,9 +73,9 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch (error) {
     console.error('Notice: Error in generateMetadata, using fallback:', error);
     return {
-      metadataBase: new URL('https://whatsuplink.online'),
-      title: 'Join active whatsapp group links | submit your group - Whatuplink',
-      description: 'The ultimate directory for WhatsApp group links.',
+      metadataBase: new URL('https://groupsor.co.uk'),
+      title: 'Groupsor - The largest Collection of Whatsapp groups and channels',
+      description: 'The largest Collection of Whatsapp groups and channels.',
     };
   }
 }
@@ -97,9 +98,9 @@ const DEFAULT_LAYOUT_FALLBACK = {
     { id: '6', label: 'Terms', href: '/terms' },
   ],
   footerContent: {
-    heading: 'WhatsUpLink',
-    paragraph: 'Your number one directory for discovering and sharing WhatsApp group links.',
-    copyrightText: `Built for WhatsUpLink. © ${new Date().getFullYear()}`,
+    heading: 'Groupsor',
+    paragraph: 'The largest Collection of Whatsapp groups and channels from around the world.',
+    copyrightText: '© 2026 | Groupsor',
   },
   backgroundSettings: {
     bgImageEnabled: true,
@@ -107,13 +108,13 @@ const DEFAULT_LAYOUT_FALLBACK = {
   },
   homepageSeoContent: {
     enabled: true,
-    heading: 'Your Ultimate Hub for Active WhatsApp Group Links',
-    content: 'Welcome to WhatsUpLink, the largest directory of active WhatsApp group links.',
+    heading: 'The largest Collection of Whatsapp groups and channels',
+    content: 'Welcome to Groupsor, the largest collection of active WhatsApp group links and channels.',
   },
   seoSettings: {
-    siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
-    metaDescription: "The ultimate directory for WhatsApp group links.",
-    metaKeywords: "whatsapp group links, whatsapp groups"
+    siteTitle: "Groupsor - The largest Collection of Whatsapp groups and channels",
+    metaDescription: "The largest Collection of Whatsapp groups and channels.",
+    metaKeywords: "whatsapp group links, whatsapp groups, whatsapp channels, groupsor"
   }
 };
 
@@ -176,7 +177,7 @@ export default async function RootLayout({
           strategy="afterInteractive"
         />
       </head>
-      <body className={`${inter.variable} font-body antialiased`} style={bodyStyle}>
+      <body className={`${inter.variable} font-body antialiased`} style={bodyStyle} suppressHydrationWarning>
         <Suspense>
           <TopProgressBar />
         </Suspense>
@@ -211,12 +212,21 @@ export default async function RootLayout({
               <div className="container py-12">
                 <div className={`flex flex-col md:flex-row items-center gap-12 ${moderationSettings?.showNewsletter ? 'justify-between' : 'justify-center'}`}>
                   <div className={`flex flex-col items-center ${moderationSettings?.showNewsletter ? 'md:items-start text-center md:text-left' : 'text-center md:items-center md:text-center'}`}>
-                      <h3 className="text-xl font-bold">{layoutSettings?.footerContent?.heading || 'WhatsUpLink'}</h3>
+                      <h3 className="text-xl font-bold">
+                        {layoutSettings?.footerContent?.heading && layoutSettings.footerContent.heading !== 'WhatsUpLink'
+                          ? layoutSettings.footerContent.heading
+                          : 'Groupsor'}
+                      </h3>
                       <p className="text-muted-foreground mt-2 max-w-md">
-                        {layoutSettings?.footerContent?.paragraph || 'Your number one directory for discovering and sharing WhatsApp group links.'}
+                        {layoutSettings?.footerContent?.paragraph && !layoutSettings.footerContent.paragraph.includes('WhatsUpLink')
+                          ? layoutSettings.footerContent.paragraph
+                          : 'The largest Collection of Whatsapp groups and channels from around the world.'}
                       </p>
                        <p className="text-sm text-muted-foreground mt-8">
-                          {layoutSettings?.footerContent?.copyrightText || `Built for WhatsUpLink. © ${new Date().getFullYear()}`}
+                          © 2026 |{' '}
+                          <Link href="/" className="hover:underline font-medium text-foreground">
+                            Groupsor
+                          </Link>
                         </p>
                   </div>
                   {moderationSettings?.showNewsletter && (

@@ -1,6 +1,6 @@
 {
-  "name": "WhatsUpLink",
-  "description": "Directory for discovering and sharing WhatsApp group links and channels.",
+  "name": "Groupsor",
+  "description": "The largest collection of WhatsApp groups and channels.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

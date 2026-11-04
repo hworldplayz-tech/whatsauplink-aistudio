@@ -19,7 +19,7 @@ export function PopupAdModal({ adSettings }: PopupAdProps) {
     if (!popupSlot || !popupSlot.enabled) return;
 
     // Check session storage to see if user already dismissed popup this session
-    const dismissed = sessionStorage.getItem('whatsuplink_popup_dismissed');
+    const dismissed = sessionStorage.getItem('groupsor_popup_dismissed');
     if (dismissed) return;
 
     const delayMs = (popupSlot.popupDelaySeconds || 5) * 1000;
@@ -34,7 +34,7 @@ export function PopupAdModal({ adSettings }: PopupAdProps) {
 
   const handleClose = () => {
     setIsOpen(false);
-    sessionStorage.setItem('whatsuplink_popup_dismissed', 'true');
+    sessionStorage.setItem('groupsor_popup_dismissed', 'true');
   };
 
   return (

@@ -126,7 +126,7 @@ export function HomePage({
         <section className="bg-card/50 border-b border-primary/20">
             <div className="container py-12 md:py-16 text-center">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground">
-                {pageTitle || 'The Ultimate WhatsApp Group Directory'}
+                {pageTitle || 'The largest Collection of Whatsapp groups and channels'}
               </h1>
               <p className="mx-auto mt-4 max-w-xl text-muted-foreground md:text-lg">
                 {isDynamicPage

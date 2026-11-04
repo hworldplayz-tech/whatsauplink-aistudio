@@ -28,12 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!group) {
       return {
-        title: 'Group Link Not Found | WhatsUpLink',
+        title: 'Group Link Not Found | Groupsor',
         description: 'The WhatsApp group link you are looking for could not be found.',
       };
     }
 
-    const title = `Join ${group.title} WhatsApp Group Link | WhatsUpLink`;
+    const title = `Join ${group.title} WhatsApp Group Link | Groupsor`;
     const description = `Find and join the ${group.title} WhatsApp group link. ${group.description?.substring(0, 120)}...`;
 
     return {
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch (e) {
     return {
-      title: 'WhatsApp Group Link | WhatsUpLink',
+      title: 'WhatsApp Group Link | Groupsor',
       description: 'Join active WhatsApp group links.',
     };
   }

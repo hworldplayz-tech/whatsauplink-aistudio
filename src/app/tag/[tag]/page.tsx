@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const tags = (resolvedParams?.tag || '').split('+').map(t => decodeURIComponent(t));
     const tagTitle = tags.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ');
 
-    const title = `Active ${tagTitle} WhatsApp Group Links | WhatsUpLink`;
-    const description = `Find and join the best ${tagTitle} WhatsApp groups. The ultimate directory for active communities related to ${tagTitle}.`;
+    const title = `Active ${tagTitle} WhatsApp Group Links | Groupsor`;
+    const description = `Find and join the best ${tagTitle} WhatsApp groups. The largest collection of active communities related to ${tagTitle}.`;
 
     return {
       title,
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch (e) {
     return {
-      title: 'WhatsApp Group Links | WhatsUpLink',
+      title: 'WhatsApp Group Links | Groupsor',
       description: 'Discover active WhatsApp groups and channels.',
     };
   }
@@ -123,7 +123,7 @@ export default async function TagPage({ params }: Props) {
 
   // Dynamic SEO Content
   const seoTitle = `Best WhatsApp Group Links for ${tagTitle}`;
-  const seoContent = `Explore our curated collection of active WhatsApp group links for interests in ${tagTitle}. WhatsUpLink is your top destination for discovering engaging communities. Whether you're searching for ${tagTitle} discussions, hobby groups, or more, find the most up-to-date and active links right here.`;
+  const seoContent = `Explore our curated collection of active WhatsApp group links for interests in ${tagTitle}. Groupsor is your top destination for discovering engaging communities. Whether you're searching for ${tagTitle} discussions, hobby groups, or more, find the most up-to-date and active links right here.`;
 
 
   return (

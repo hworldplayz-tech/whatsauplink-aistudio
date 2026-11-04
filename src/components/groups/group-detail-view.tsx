@@ -186,7 +186,7 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
       },
       author: {
         '@type': 'Organization',
-        name: 'WhatsUpLink',
+        name: 'Groupsor',
       },
       // Use lastSubmittedAt for more accurate date, fallback to createdAt
       datePublished: group.lastSubmittedAt || group.createdAt,

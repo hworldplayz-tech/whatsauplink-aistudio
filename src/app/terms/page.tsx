@@ -15,11 +15,11 @@ export default async function TermsOfServicePage() {
           <div className="mx-auto max-w-3xl space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Terms of Service</h1>
-              <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
+              <p className="text-muted-foreground" suppressHydrationWarning>Last updated: November 2026</p>
             </div>
             <div className="prose max-w-none text-muted-foreground">
               <p>
-                Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the WhatsUpLink website (the "Service") operated by us.
+                Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Groupsor website (the "Service") operated by us.
               </p>
               
               <h2 className="text-2xl font-bold mt-8 mb-4 text-foreground">Acceptance of Terms</h2>

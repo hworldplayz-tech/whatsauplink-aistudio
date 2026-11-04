@@ -24,9 +24,9 @@ function getFirestoreInstance() {
 const DEFAULT_LAYOUT_FALLBACK = {
   logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
   footerContent: {
-    heading: 'WhatsUpLink',
-    paragraph: 'Your number one directory for discovering and sharing WhatsApp group links.',
-    copyrightText: `Built for WhatsUpLink. © ${new Date().getFullYear()}`,
+    heading: 'Groupsor',
+    paragraph: 'The largest Collection of Whatsapp groups and channels from around the world.',
+    copyrightText: '© 2026 | Groupsor',
   },
   backgroundSettings: {
     bgImageEnabled: true,
@@ -34,13 +34,13 @@ const DEFAULT_LAYOUT_FALLBACK = {
   },
   homepageSeoContent: {
     enabled: true,
-    heading: 'Your Ultimate Hub for Active WhatsApp Group Links',
-    content: 'Welcome to WhatsUpLink, the largest directory of active WhatsApp group links.',
+    heading: 'The largest Collection of Whatsapp groups and channels',
+    content: 'Welcome to Groupsor, the largest collection of active WhatsApp group links and channels.',
   },
   seoSettings: {
-    siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
-    metaDescription: "The ultimate directory for WhatsApp group links.",
-    metaKeywords: "whatsapp group links, whatsapp groups"
+    siteTitle: "Groupsor - The largest Collection of Whatsapp groups and channels",
+    metaDescription: "The largest Collection of Whatsapp groups and channels.",
+    metaKeywords: "whatsapp group links, whatsapp groups, whatsapp channels, groupsor"
   }
 };
 

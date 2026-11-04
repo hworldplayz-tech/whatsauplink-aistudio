@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const categoryInfo = allCategories.find(c => c.value === resolvedParams.category);
     const categoryLabel = categoryInfo ? categoryInfo.label : (resolvedParams.category || '').replace(/-/g, ' ');
 
-    const title = `Best ${categoryLabel} WhatsApp Group Links | WhatsUpLink`;
-    const description = `Discover and join the best ${categoryLabel} WhatsApp groups and channels. The ultimate directory for finding communities about ${categoryLabel}.`;
+    const title = `Best ${categoryLabel} WhatsApp Group Links | Groupsor`;
+    const description = `Discover and join the best ${categoryLabel} WhatsApp groups and channels. The largest collection of communities about ${categoryLabel}.`;
 
     return {
       title,
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch (e) {
     return {
-      title: 'WhatsApp Group Links | WhatsUpLink',
+      title: 'WhatsApp Group Links | Groupsor',
       description: 'Discover active WhatsApp groups and channels.',
     };
   }
@@ -115,7 +115,7 @@ export default async function CategoryPage({ params }: Props) {
 
   // Dynamic SEO Content
   const seoTitle = `Explore the Best ${categoryLabel} WhatsApp Group Links`;
-  const seoContent = `Dive into our extensive collection of active WhatsApp group links dedicated to ${categoryLabel}. WhatsUpLink is your number one source for discovering and joining the most engaging and active communities. Whether you're looking for ${categoryLabel} groups for discussion, sharing content, or connecting with like-minded people, you'll find the best active links right here. Our directory is constantly updated to ensure you get access to fresh and active WhatsApp groups in the ${categoryLabel} category.`;
+  const seoContent = `Dive into our extensive collection of active WhatsApp group links dedicated to ${categoryLabel}. Groupsor is your number one source for discovering and joining the most engaging and active communities. Whether you're looking for ${categoryLabel} groups for discussion, sharing content, or connecting with like-minded people, you'll find the best active links right here. Our directory is constantly updated to ensure you get access to fresh and active WhatsApp groups in the ${categoryLabel} category.`;
 
 
   return (

@@ -32,7 +32,7 @@ const FALLBACK_TICKER_NEWS: NewsArticle[] = [
   {
     title: "Discover 10,000+ active WhatsApp groups and community channels worldwide",
     url: "/",
-    source: "WhatsUpLink",
+    source: "Groupsor",
   },
   {
     title: "Submit your WhatsApp group link today for free to get discovered by thousands",

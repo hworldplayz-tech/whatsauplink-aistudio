@@ -24,7 +24,7 @@ function sanitizeTag(tag: string): string {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://whatsuplink.online';
+  const baseUrl = 'https://groupsor.co.uk';
 
   const staticRoutes = [
     '/',

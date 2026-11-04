@@ -80,7 +80,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
         )}
         
         <div className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-4">
-            <span className="flex items-center gap-1">
+            <span suppressHydrationWarning className="flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {timeAgo}
             </span>
              <Badge 
@@ -154,7 +154,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
         </CardContent>
         <CardFooter className="flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+            <span suppressHydrationWarning className="flex items-center gap-1.5">
                 <Clock className="h-3 w-3" /> Submitted {timeAgo}
             </span>
              <Badge 

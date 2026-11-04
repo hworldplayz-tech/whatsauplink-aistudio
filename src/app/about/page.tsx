@@ -14,20 +14,20 @@ export default async function AboutPage() {
         <div className="container py-12 md:py-24">
           <div className="mx-auto max-w-3xl space-y-8">
             <div className="space-y-4 text-center">
-              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">About WhatsUpLink</h1>
+              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">About Groupsor</h1>
               <p className="text-lg text-muted-foreground">
-                Your number one directory for discovering and sharing WhatsApp group links.
+                The largest Collection of Whatsapp groups and channels from around the world.
               </p>
             </div>
             <div className="space-y-6 text-lg">
               <p>
-                Welcome to WhatsUpLink! Our mission is to create a comprehensive and easy-to-use directory of WhatsApp group links from around the world. Whether you're looking for a group to discuss your favorite hobbies, stay updated on news, connect with professionals in your field, or just find a fun community, we've got you covered. From USA WhatsApp group links to communities for gaming like PUBG and Freefire, our goal is to be the ultimate resource.
+                Welcome to Groupsor! Our mission is to create a comprehensive and easy-to-use directory of WhatsApp group links and channels from around the world. Whether you're looking for a group to discuss your favorite hobbies, stay updated on news, connect with professionals in your field, or just find a fun community, we've got you covered. From global WhatsApp group links to communities for gaming, tech, and networking, our goal is to be the ultimate resource.
               </p>
               <p>
-                Our platform allows users to easily submit new WhatsApp group links, helping our directory grow and stay up-to-date. Each submission for a group link is reviewed to ensure quality and safety for our community. You can browse groups by category, country, or search for specific keywords to find exactly what you're looking for, including family WhatsApp group links, entertainment groups, and even adult WhatsApp group links.
+                Our platform allows users to easily submit new WhatsApp group links and channels, helping our directory grow and stay up-to-date. Each submission for a group link is reviewed to ensure quality and safety for our community. You can browse groups by category, country, or search for specific keywords to find exactly what you're looking for.
               </p>
               <p>
-                We believe in the power of community and connection. WhatsUpLink was built to bridge the gap and make it easier for people to find their tribes by sharing and joining the best WhatsApp group links available. Thank you for being a part of our growing community!
+                We believe in the power of community and connection. Groupsor was built to bridge the gap and make it easier for people to find their tribes by sharing and joining the best WhatsApp group links and channels available. Thank you for being a part of our growing community!
               </p>
             </div>
           </div>

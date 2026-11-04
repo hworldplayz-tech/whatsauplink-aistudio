@@ -9,8 +9,8 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 
 export const metadata: Metadata = {
-  title: 'Blog | WhatsUpLink',
-  description: 'Articles, tips, and updates from the WhatsUpLink team on how to find, manage, and grow your WhatsApp communities safely and effectively.',
+  title: 'Blog | Groupsor',
+  description: 'Articles, tips, and updates from the Groupsor team on how to find, manage, and grow your WhatsApp communities safely and effectively.',
 };
 
 export default function BlogPage() {

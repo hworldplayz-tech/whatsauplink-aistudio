@@ -346,9 +346,9 @@ const defaultLayoutSettings: LayoutSettings = {
         { id: '6', label: 'Terms', href: '/terms' },
     ],
     footerContent: {
-        heading: 'WhatsUpLink',
-        paragraph: 'Your number one directory for discovering and sharing WhatsApp group links.',
-        copyrightText: `Built for WhatsUpLink. © ${new Date().getFullYear()}`,
+        heading: 'Groupsor',
+        paragraph: 'The largest Collection of Whatsapp groups and channels from around the world.',
+        copyrightText: '© 2026 | Groupsor',
     },
     backgroundSettings: {
         bgImageEnabled: true,
@@ -356,17 +356,17 @@ const defaultLayoutSettings: LayoutSettings = {
     },
     homepageSeoContent: {
         enabled: true,
-        heading: 'Your Ultimate Hub for Active WhatsApp Group Links',
-        content: `Welcome to WhatsUpLink, the largest and most up-to-date directory of active WhatsApp group links on the internet. If you're searching for the best WhatsApp groups to join, you've come to the right place. Our platform is dedicated to providing a comprehensive collection of genuine and active group links, making it easy for you to discover communities that match your interests. Whether you are looking for USA WhatsApp group links, entertainment groups, or specific hobby communities, our active directory is your number one resource.
+        heading: 'The largest Collection of Whatsapp groups and channels',
+        content: `Welcome to Groupsor, the largest and most up-to-date collection of active WhatsApp groups and channels on the internet. If you're searching for the best WhatsApp groups to join, you've come to the right place. Our platform is dedicated to providing a comprehensive collection of genuine and active group links, making it easy for you to discover communities that match your interests. Whether you are looking for UK or USA WhatsApp group links, entertainment groups, or specific hobby communities, Groupsor is your number one resource.
 
-We continuously update our database to ensure you find only the most relevant and active WhatsApp links. Forget dead links and inactive groups; we focus on quality. You can easily find active groups for everything from gaming, like PUBG and Freefire, to professional networking, family groups, and even adult WhatsApp group links. Every link is a gateway to a new community.
+We continuously update our database to ensure you find only the most relevant and active WhatsApp links. Forget dead links and inactive groups; we focus on quality. You can easily find active groups for everything from gaming, technology, business networking, family groups, and education. Every link is a gateway to a new community.
 
-Our mission is to be the best source for discovering and sharing WhatsApp group links. Join thousands of users who trust WhatsUpLink to find active and engaging WhatsApp groups. Start exploring our vast collection of active links today and connect with people from all over the world. Submit your own WhatsApp group link to grow your community and become part of our ever-expanding network of active groups.`
+Our mission is to be the best source for discovering and sharing WhatsApp group links and channels. Join thousands of users who trust Groupsor to find active and engaging WhatsApp groups. Start exploring our vast collection of active links today and connect with people from all over the world. Submit your own WhatsApp group or channel link to grow your community and become part of our ever-expanding network of active groups.`
     },
     seoSettings: {
-        siteTitle: "Join active whatsapp group links | submit your group - Whatuplink",
-        metaDescription: "The ultimate directory for WhatsApp group links. Discover and join groups for family, friends, USA communities, entertainment, PUBG, Freefire, adult topics, and more. Share your own WhatsApp group link today!",
-        metaKeywords: "whatsapp group links, whatsapp groups, usa whatsapp group, family whatsapp group link, adult whatsapp group links, pubg whatsapp group, freefire whatsapp groups links, entertainment whatsapp group"
+        siteTitle: "Groupsor - The largest Collection of Whatsapp groups and channels",
+        metaDescription: "The largest Collection of Whatsapp groups and channels. Discover and join active groups for community, gaming, business, and more. Share your own WhatsApp group link today!",
+        metaKeywords: "whatsapp group links, whatsapp groups, whatsapp channels, groupsor, active whatsapp groups"
     }
 };
 
