@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
       metaDescription: "The largest Collection of Whatsapp groups and channels. Discover and join active groups for family, friends, USA communities, entertainment, gaming, and more. Share your own WhatsApp group link today!",
       metaKeywords: "whatsapp group links, whatsapp groups, whatsapp channels, groupsor, active whatsapp groups"
     };
-    const logoUrl = layoutSettings?.logoUrl || '/whatsuplink_logo_and_favicon_without_background.png';
+    const logoUrl = layoutSettings?.logoUrl || '/groupsor_logo.png';
 
     const title = seoSettings.siteTitle || "Groupsor - The largest Collection of Whatsapp groups and channels";
     const description = seoSettings.metaDescription || "The largest Collection of Whatsapp groups and channels.";
@@ -87,7 +87,7 @@ export const viewport: Viewport = {
 
 
 const DEFAULT_LAYOUT_FALLBACK = {
-  logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+  logoUrl: '/groupsor_logo.png',
   navLinks: [
     { id: '1', label: 'Home', href: '/' },
     { id: '2', label: 'Submit Group', href: '/submit' },

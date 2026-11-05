@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { MessagesSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_LANGUAGES } from '@/lib/constants';
 
 type SubmitGroupFormProps = {
     categories: Category[];
@@ -49,6 +50,7 @@ export function SubmitGroupForm({ categories, countries, groupToEdit, onSuccess 
       imageHint: groupToEdit?.imageHint || '',
       category: groupToEdit?.category || '',
       country: groupToEdit?.country || '',
+      language: groupToEdit?.language || 'en',
       type: groupToEdit?.type || 'group',
       tags: groupToEdit?.tags?.join(', ') || '',
     },
@@ -107,7 +109,7 @@ export function SubmitGroupForm({ categories, countries, groupToEdit, onSuccess 
           onSuccess();
           form.reset();
         } else {
-          form.reset({ link: '', title: '', description: '', imageUrl: '', category: '', country: '', type: 'group', tags: '' });
+          form.reset({ link: '', title: '', description: '', imageUrl: '', category: '', country: '', language: 'en', type: 'group', tags: '' });
         }
       } else {
         toast({
@@ -254,6 +256,24 @@ export function SubmitGroupForm({ categories, countries, groupToEdit, onSuccess 
                         </FormItem>
                     )}
                 />
+                <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                            <FormLabel>Language</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || 'en'} name={field.name}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select primary language" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {DEFAULT_LANGUAGES.filter(l => l.value !== 'all').map(lang => (
+                                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                  <FormField
                     control={form.control}
                     name="type"
@@ -261,14 +281,18 @@ export function SubmitGroupForm({ categories, countries, groupToEdit, onSuccess 
                         <FormItem className="space-y-3 md:col-span-2">
                             <FormLabel>Type</FormLabel>
                             <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4" name={field.name}>
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4 flex-wrap" name={field.name}>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl><RadioGroupItem value="group" /></FormControl>
-                                        <FormLabel className="font-normal">Group (Members can chat)</FormLabel>
+                                        <FormLabel className="font-normal">Group (Discussion)</FormLabel>
                                     </FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl><RadioGroupItem value="channel" /></FormControl>
-                                        <FormLabel className="font-normal">Channel (Admins post updates)</FormLabel>
+                                        <FormLabel className="font-normal">Channel (Broadcast)</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl><RadioGroupItem value="community" /></FormControl>
+                                        <FormLabel className="font-normal">Community (Network)</FormLabel>
                                     </FormItem>
                                 </RadioGroup>
                             </FormControl>

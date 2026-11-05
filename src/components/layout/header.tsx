@@ -46,7 +46,7 @@ export function Header({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   
-  const finalLogoUrl = logoUrl || '/whatsuplink_logo_and_favicon_without_background.png';
+  const finalLogoUrl = logoUrl || '/groupsor_logo.png';
 
   // Effect to sync dialog state with URL on initial load and back/forward navigation
   useEffect(() => {

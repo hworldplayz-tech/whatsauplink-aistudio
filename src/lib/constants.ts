@@ -40,7 +40,34 @@ export const DEFAULT_CATEGORIES = [
 ];
 
 export const GROUP_TYPES = [
-    { value: 'all', label: 'All Types' },
-    { value: 'group', label: 'Group' },
-    { value: 'channel', label: 'Channel' },
+  { value: 'all', label: 'All Types' },
+  { value: 'group', label: 'Groups' },
+  { value: 'channel', label: 'Channels' },
+  { value: 'community', label: 'Communities' },
+];
+
+export const DEFAULT_LANGUAGES = [
+  { value: 'all', label: 'All Languages' },
+  { value: 'en', label: 'English' },
+  { value: 'hi', label: 'Hindi (हिंदी)' },
+  { value: 'es', label: 'Spanish (Español)' },
+  { value: 'ur', label: 'Urdu (اردو)' },
+  { value: 'ar', label: 'Arabic (العربية)' },
+  { value: 'pt', label: 'Portuguese (Português)' },
+  { value: 'bn', label: 'Bengali (বাংলা)' },
+  { value: 'ta', label: 'Tamil (தமிழ்)' },
+  { value: 'te', label: 'Telugu (తెలుగు)' },
+  { value: 'id', label: 'Indonesian (Bahasa)' },
+  { value: 'de', label: 'German (Deutsch)' },
+  { value: 'fr', label: 'French (Français)' },
+  { value: 'ru', label: 'Russian (Русский)' },
+  { value: 'other', label: 'Other Language' },
+];
+
+export const SORT_OPTIONS = [
+  { value: 'newest', label: 'Recently Added' },
+  { value: 'popular', label: 'Most Popular (Views)' },
+  { value: 'trending', label: 'Trending Today' },
+  { value: 'rating', label: 'Highest Rated' },
+  { value: 'trust', label: 'Highest Trust (Working)' },
 ];

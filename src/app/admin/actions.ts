@@ -354,7 +354,7 @@ export async function seedInitialData() {
 // ------ Layout Settings Actions ------
 
 const defaultLayoutSettings: LayoutSettings = {
-    logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+    logoUrl: '/groupsor_logo.png',
     navLinks: [
         { id: '1', label: 'Home', href: '/' },
         { id: '2', label: 'Submit Group', href: '/submit' },

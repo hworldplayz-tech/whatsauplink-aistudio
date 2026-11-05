@@ -37,7 +37,7 @@ const FALLBACK_MODERATION: ModerationSettings = {
 };
 
 const FALLBACK_LAYOUT: LayoutSettings = {
-  logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+  logoUrl: '/groupsor_logo.png',
   navLinks: [],
   footerContent: {
     heading: 'The largest Collection of Whatsapp groups and channels',

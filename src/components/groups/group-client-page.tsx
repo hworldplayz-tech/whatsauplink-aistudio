@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useLayoutEffect, useEffect } from 'react';
@@ -9,7 +8,7 @@ import type { AdSettings } from '@/lib/ad-types';
 import { AdSlot } from '@/components/ads/ad-slot';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { Loader2 } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 type GroupClientPageProps = {
     allGroups: GroupLink[];
@@ -27,21 +26,22 @@ export function GroupClientPage({
   initialCategories,
   initialCountries,
   initialSearchQuery = '',
-  isLoading: isInitiallyLoading = false, // Default to false
+  isLoading: isInitiallyLoading = false,
   adSettings,
 }: GroupClientPageProps) {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedType, setSelectedType] = useState<'all' | 'group' | 'channel'>('all');
+  const [selectedLanguage, setSelectedLanguage] = useState('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'group' | 'channel' | 'community'>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'trending' | 'rating' | 'trust'>('newest');
   
   const [visibleCount, setVisibleCount] = useState(initialSettings.groupsPerPage);
 
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [countries, setCountries] = useState<Country[]>(initialCountries);
   
-  // Use a separate state for loading to avoid re-triggering skeletons on filter change
   const [isLoading, setIsLoading] = useState(isInitiallyLoading);
 
   // Restore scroll position on mount
@@ -101,7 +101,6 @@ export function GroupClientPage({
     }
   }, [groupsList.length, initialSettings.showClicks]);
 
-
   // Update categories and countries if they change
   useEffect(() => {
     setCategories(initialCategories);
@@ -116,23 +115,89 @@ export function GroupClientPage({
     setVisibleCount(prevCount => prevCount + initialSettings.groupsPerPage);
   };
 
-  const filteredGroups = useMemo(() => {
-    return groupsList.filter(group => {
-      const searchLower = searchQuery.toLowerCase();
-      const searchMatch = !searchQuery || 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCountry('all');
+    setSelectedCategory('all');
+    setSelectedLanguage('all');
+    setSelectedType('all');
+    setSortBy('newest');
+  };
+
+  // Live count for Quick Toggle Tabs
+  const typeCounts = useMemo(() => {
+    return {
+      all: groupsList.length,
+      group: groupsList.filter(g => (g.type || 'group') === 'group').length,
+      channel: groupsList.filter(g => g.type === 'channel').length,
+      community: groupsList.filter(g => g.type === 'community').length,
+    };
+  }, [groupsList]);
+
+  // Filter and sort groups
+  const filteredAndSortedGroups = useMemo(() => {
+    // 1. Filtering
+    const searchLower = searchQuery.toLowerCase().trim();
+    const filtered = groupsList.filter(group => {
+      const searchMatch = !searchLower || 
         group.title.toLowerCase().includes(searchLower) || 
         group.description.toLowerCase().includes(searchLower) ||
+        group.category.toLowerCase().includes(searchLower) ||
+        group.country.toLowerCase().includes(searchLower) ||
         group.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+
       const countryMatch = selectedCountry === 'all' || group.country === selectedCountry;
       const categoryMatch = selectedCategory === 'all' || group.category.toLowerCase() === selectedCategory.toLowerCase();
-      const typeMatch = selectedType === 'all' || group.type === selectedType;
-      return searchMatch && countryMatch && categoryMatch && typeMatch;
+      const typeMatch = selectedType === 'all' || (group.type || 'group') === selectedType;
+      const languageMatch = selectedLanguage === 'all' || (group.language || 'en') === selectedLanguage;
+
+      return searchMatch && countryMatch && categoryMatch && typeMatch && languageMatch;
     });
-  }, [groupsList, searchQuery, selectedCountry, selectedCategory, selectedType]);
+
+    // 2. Sorting
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'popular') {
+        return (b.clicks ?? 0) - (a.clicks ?? 0);
+      }
+
+      if (sortBy === 'trending') {
+        const now = Date.now();
+        const aDate = a.lastSubmittedAt || a.createdAt;
+        const bDate = b.lastSubmittedAt || b.createdAt;
+        const aHours = aDate ? Math.max(1, (now - new Date(aDate).getTime()) / 3600000) : 1000;
+        const bHours = bDate ? Math.max(1, (now - new Date(bDate).getTime()) / 3600000) : 1000;
+        
+        // Decay score: clicks + verified weight / age
+        const aScore = ((a.clicks ?? 0) + (a.workingVotes ?? 0) * 4 + (a.isVerified ? 30 : 0)) / Math.pow(aHours + 2, 1.2);
+        const bScore = ((b.clicks ?? 0) + (b.workingVotes ?? 0) * 4 + (b.isVerified ? 30 : 0)) / Math.pow(bHours + 2, 1.2);
+        return bScore - aScore;
+      }
+
+      if (sortBy === 'rating') {
+        const aAvg = (a.ratingCount ?? 0) > 0 ? (a.totalRating ?? 0) / (a.ratingCount ?? 0) : 0;
+        const bAvg = (b.ratingCount ?? 0) > 0 ? (b.totalRating ?? 0) / (b.ratingCount ?? 0) : 0;
+        if (bAvg !== aAvg) return bAvg - aAvg;
+        return (b.ratingCount ?? 0) - (a.ratingCount ?? 0);
+      }
+
+      if (sortBy === 'trust') {
+        const aTrust = (a.workingVotes ?? 0) - (a.brokenVotes ?? 0) + (a.isVerified ? 20 : 0);
+        const bTrust = (b.workingVotes ?? 0) - (b.brokenVotes ?? 0) + (b.isVerified ? 20 : 0);
+        return bTrust - aTrust;
+      }
+
+      // Default: 'newest'
+      const aTime = a.lastSubmittedAt || a.createdAt;
+      const bTime = b.lastSubmittedAt || b.createdAt;
+      const aVal = aTime ? new Date(aTime).getTime() : 0;
+      const bVal = bTime ? new Date(bTime).getTime() : 0;
+      return bVal - aVal;
+    });
+  }, [groupsList, searchQuery, selectedCountry, selectedCategory, selectedType, selectedLanguage, sortBy]);
 
   const visibleGroups = useMemo(() => {
-    return filteredGroups.slice(0, visibleCount);
-  }, [filteredGroups, visibleCount]);
+    return filteredAndSortedGroups.slice(0, visibleCount);
+  }, [filteredAndSortedGroups, visibleCount]);
 
   const gridClass = view === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col gap-6';
 
@@ -148,11 +213,19 @@ export function GroupClientPage({
             onCountryChange={setSelectedCountry}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
             selectedType={selectedType}
             onTypeChange={setSelectedType}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             categories={categories}
             countries={countries}
-            isLoadingFilters={false} // Data is now pre-loaded
+            groupsList={groupsList}
+            typeCounts={typeCounts}
+            totalFilteredCount={filteredAndSortedGroups.length}
+            onResetFilters={handleResetFilters}
+            isLoadingFilters={false}
         />
 
         {/* Ad Placement Above Groups List */}
@@ -164,10 +237,23 @@ export function GroupClientPage({
                     <Skeleton key={i} className={view === 'grid' ? 'h-40' : 'h-48'} />
                 ))}
             </div>
-        ) : allGroups.length === 0 ? ( // Check initial `allGroups` first
-             <div className="mt-16 text-center text-muted-foreground">
-                <h3 className="text-xl font-semibold">No groups found</h3>
-                <p>Try adjusting your filters or submit a new group!</p>
+        ) : filteredAndSortedGroups.length === 0 ? (
+             <div className="mt-12 text-center p-8 border border-dashed rounded-2xl bg-card/50">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
+                  <RotateCcw className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">No groups match your search or filters</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                  Try clearing your search query or switching your category, country, or language filters.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={handleResetFilters} 
+                  className="mt-4 gap-2 rounded-full"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Clear all filters
+                </Button>
             </div>
         ) : visibleGroups.length > 0 ? (
             <div className={gridClass}>
@@ -197,16 +283,11 @@ export function GroupClientPage({
                   );
                 })}
             </div>
-        ) : (
-            <div className="mt-16 text-center text-muted-foreground">
-                <h3 className="text-xl font-semibold">No groups found</h3>
-                <p>Try adjusting your filters or submit a new group!</p>
-            </div>
-        )}
+        ) : null}
 
-        {filteredGroups.length > visibleCount && (
+        {filteredAndSortedGroups.length > visibleCount && (
             <div className="mt-12 text-center">
-                <Button onClick={handleLoadMore} size="lg">
+                <Button onClick={handleLoadMore} size="lg" className="rounded-full px-8">
                     Load More Groups
                 </Button>
             </div>

@@ -48,7 +48,9 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
   
   const typeIcon = group.type === 'channel' 
     ? <RadioTower className="h-3 w-3" /> 
-    : <Users className="h-3 w-3" />;
+    : group.type === 'community'
+    ? <Users className="h-3 w-3" />
+    : <MessagesSquare className="h-3 w-3" />;
 
   const detailUrl = `/group/invite/${group.id}`;
 
@@ -114,16 +116,25 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
             </div>
         )}
         
-        <div className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-4">
+        <div className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-2 flex-wrap">
             <span suppressHydrationWarning className="flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {timeAgo}
             </span>
-             <Badge 
-                variant={group.type === 'channel' ? 'default' : 'secondary'} 
-                className="capitalize text-xs px-2 py-0.5"
+            <Badge 
+                variant={group.type === 'channel' ? 'default' : group.type === 'community' ? 'destructive' : 'secondary'} 
+                className={`capitalize text-[11px] px-2 py-0.2 font-medium ${
+                  group.type === 'channel' ? 'bg-sky-600 hover:bg-sky-700 text-white' :
+                  group.type === 'community' ? 'bg-purple-600 hover:bg-purple-700 text-white' :
+                  'bg-muted text-muted-foreground'
+                }`}
             >
-                {group.type}
+                {group.type === 'channel' ? '📢 Channel' : group.type === 'community' ? '👥 Community' : '💬 Group'}
             </Badge>
+            {group.language && group.language !== 'en' && group.language !== 'all' && (
+              <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 py-0 border-muted-foreground/30">
+                🌐 {group.language}
+              </Badge>
+            )}
         </div>
 
         {showClicks && (
@@ -213,12 +224,21 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
             <span suppressHydrationWarning className="flex items-center gap-1.5">
                 <Clock className="h-3 w-3" /> Submitted {timeAgo}
             </span>
-             <Badge 
-                variant={group.type === 'channel' ? 'default' : 'secondary'} 
-                className="capitalize text-xs px-2 py-0.5"
+            <Badge 
+                variant={group.type === 'channel' ? 'default' : group.type === 'community' ? 'destructive' : 'secondary'} 
+                className={`capitalize text-xs px-2 py-0.5 font-medium ${
+                  group.type === 'channel' ? 'bg-sky-600 hover:bg-sky-700 text-white' :
+                  group.type === 'community' ? 'bg-purple-600 hover:bg-purple-700 text-white' :
+                  'bg-muted text-muted-foreground'
+                }`}
             >
-                {group.type}
+                {group.type === 'channel' ? '📢 Channel' : group.type === 'community' ? '👥 Community' : '💬 Group'}
             </Badge>
+            {group.language && group.language !== 'en' && group.language !== 'all' && (
+              <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 py-0 border-muted-foreground/30">
+                🌐 {group.language}
+              </Badge>
+            )}
             {showClicks && (
                 <span className="flex items-center gap-1.5">
                     <Eye className="h-3 w-3" />

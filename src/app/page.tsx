@@ -22,7 +22,7 @@ function getFirestoreInstance() {
 }
 
 const DEFAULT_LAYOUT_FALLBACK = {
-  logoUrl: '/whatsuplink_logo_and_favicon_without_background.png',
+  logoUrl: '/groupsor_logo.png',
   footerContent: {
     heading: 'Groupsor',
     paragraph: 'The largest Collection of Whatsapp groups and channels from around the world.',

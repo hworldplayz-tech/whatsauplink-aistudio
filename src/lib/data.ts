@@ -14,7 +14,8 @@ export type GroupLink = {
   tags: string[];
   featured: boolean;
   createdAt: string | null; // Always a string or null
-  type: 'group' | 'channel';
+  type: 'group' | 'channel' | 'community';
+  language?: string;
   clicks?: number;
   showClicks?: boolean;
   submissionCount?: number;
@@ -139,6 +140,7 @@ export function mapDocToGroupLink(doc: DocumentData): GroupLink {
         featured: data.featured || false,
         createdAt: formatTimestamp(data.createdAt),
         type: data.type || 'group',
+        language: data.language || 'en',
         clicks: data.clicks || 0,
         // If showClicks is not defined on the doc, default to true for backward compatibility.
         // This ensures old and new documents behave consistently.
