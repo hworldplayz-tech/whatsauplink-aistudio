@@ -148,36 +148,51 @@ export async function getPaginatedGroups(
     page: number,
     rowsPerPage: number,
 ): Promise<{ groups: GroupLink[], totalGroups: number, totalPages: number }> {
-    const db = getFirestoreInstance();
-    const groupsCollection = collection(db, 'groups');
-    
-    // First, get the total count of documents
-    const countSnapshot = await getCountFromServer(groupsCollection);
-    const totalGroups = countSnapshot.data().count;
-    const totalPages = Math.ceil(totalGroups / rowsPerPage);
-
-    // Then, fetch the documents for the current page
-    let q;
-    if (page === 1) {
-        q = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), limit(rowsPerPage));
-    } else {
-        // To get to a specific page, we need a cursor from the last doc of the previous page
-        const prevPageEndQuery = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), limit((page - 1) * rowsPerPage));
-        const prevPageDocs = await getDocs(prevPageEndQuery);
-        const lastVisible = prevPageDocs.docs[prevPageDocs.docs.length - 1];
+    try {
+        const db = getFirestoreInstance();
+        const groupsCollection = collection(db, 'groups');
         
-        if (!lastVisible) {
-            // This can happen if the page number is out of bounds
-            return { groups: [], totalGroups, totalPages };
+        // First, get the total count of documents
+        let totalGroups = 0;
+        try {
+            const countSnapshot = await getCountFromServer(groupsCollection);
+            totalGroups = countSnapshot.data().count;
+        } catch (countErr) {
+            console.warn('Could not get group count from server (using fallback):', countErr);
         }
 
-        q = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), startAfter(lastVisible), limit(rowsPerPage));
+        const totalPages = Math.max(1, Math.ceil((totalGroups || 0) / rowsPerPage));
+
+        // Then, fetch the documents for the current page
+        let q;
+        if (page === 1) {
+            q = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), limit(rowsPerPage));
+        } else {
+            try {
+                // To get to a specific page, we need a cursor from the last doc of the previous page
+                const prevPageEndQuery = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), limit((page - 1) * rowsPerPage));
+                const prevPageDocs = await getDocs(prevPageEndQuery);
+                const lastVisible = prevPageDocs.docs[prevPageDocs.docs.length - 1];
+                
+                if (!lastVisible) {
+                    return { groups: [], totalGroups, totalPages };
+                }
+
+                q = query(groupsCollection, orderBy('lastSubmittedAt', 'desc'), startAfter(lastVisible), limit(rowsPerPage));
+            } catch (cursorErr) {
+                console.warn('Cursor pagination failed, falling back to simple query:', cursorErr);
+                q = query(groupsCollection, limit(rowsPerPage));
+            }
+        }
+        
+        const querySnapshot = await getDocs(q);
+        const groups = querySnapshot.docs.map(mapDocToGroupLink);
+        
+        return { groups, totalGroups: totalGroups || groups.length, totalPages };
+    } catch (error) {
+        console.error('Notice: Error in getPaginatedGroups (graceful fallback):', error);
+        return { groups: [], totalGroups: 0, totalPages: 1 };
     }
-    
-    const querySnapshot = await getDocs(q);
-    const groups = querySnapshot.docs.map(mapDocToGroupLink);
-    
-    return { groups, totalGroups, totalPages };
 }
 
 // ----- Categories & Countries Management Actions -----
@@ -288,8 +303,11 @@ export async function deleteTaxonomyItem(type: 'category' | 'country', value: st
     }
 }
 
-// One-time seeding function
+// One-time seeding guard
+let hasSeededInitialData = false;
+
 export async function seedInitialData() {
+    if (hasSeededInitialData) return;
     try {
         const db = getFirestoreInstance();
         const categoriesRef = collection(db, 'categories');
@@ -327,8 +345,9 @@ export async function seedInitialData() {
             await batch.commit();
             console.log('Initial data seeding complete.');
         }
+        hasSeededInitialData = true;
     } catch (error) {
-        console.warn('Skipping initial data seeding (read/write not permitted or failed):', error);
+        console.warn('Notice: seedInitialData skipped or deferred:', error);
     }
 }
 
@@ -495,12 +514,17 @@ export async function saveLayoutSettings(formData: FormData): Promise<{ success:
 // ------ Report Management Actions ------
 
 export async function getReports(): Promise<Report[]> {
-    const db = getFirestoreInstance();
-    const reportsCollection = collection(db, 'reports');
-    const q = query(reportsCollection, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(mapDocToReport);
+    try {
+        const db = getFirestoreInstance();
+        const reportsCollection = collection(db, 'reports');
+        const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(50));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return [];
+        return snapshot.docs.map(mapDocToReport);
+    } catch (error) {
+        console.error('Notice: Could not fetch reports (graceful fallback):', error);
+        return [];
+    }
 }
 
 export async function deleteReport(reportId: string): Promise<{ success: boolean; message: string }> {

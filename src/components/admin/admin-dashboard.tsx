@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useEffect, useState, useMemo, useTransition, useRef } from 'react';
 import type { Category, Country, GroupLink, LayoutSettings, ModerationSettings, Report } from '@/lib/data';
 import {
   Table,
@@ -89,20 +89,29 @@ export function AdminDashboard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupLink | null>(null);
+  const isInitialMount = useRef(true);
 
   const handleFetchPage = (page: number, rpp: number) => {
     startLoadingTransition(async () => {
-      const { groups: newGroups, totalPages: newTotalPages, totalGroups: newTotalGroups } = await getPaginatedGroups(page, rpp);
-      setGroups(newGroups);
-      setTotalPages(newTotalPages);
-      setTotalGroups(newTotalGroups);
-      setCurrentPage(page);
-      setRowsPerPage(rpp);
+      try {
+        const { groups: newGroups, totalPages: newTotalPages, totalGroups: newTotalGroups } = await getPaginatedGroups(page, rpp);
+        setGroups(newGroups);
+        setTotalPages(newTotalPages);
+        setTotalGroups(newTotalGroups);
+        setCurrentPage(page);
+        setRowsPerPage(rpp);
+      } catch (err) {
+        console.warn('Notice: Failed to fetch paginated groups:', err);
+      }
     });
   };
 
   useEffect(() => {
-    // This effect runs when the component mounts and when pagination/filter options change.
+    // Skip initial mount because we already have initialGroups from SSR!
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     handleFetchPage(currentPage, rowsPerPage);
   }, [currentPage, rowsPerPage]);
 
