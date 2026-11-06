@@ -10,6 +10,7 @@ import { firebaseConfig } from '@/firebase/config';
 import { mapDocToGroupLink } from '@/lib/data';
 import { Ticker } from '@/components/sports/ticker';
 import { Suspense } from 'react';
+import { FaqSection, getHomeFaqs } from '@/components/seo/faq-section';
 
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
 
@@ -109,6 +110,11 @@ export default async function Home() {
           initialCategories={categories}
           initialCountries={countries}
           adSettings={adSettings}
+        />
+        <FaqSection
+          title="Frequently Asked Questions about Groupsor"
+          description="Everything you need to know about joining and submitting active WhatsApp groups and channels."
+          items={getHomeFaqs()}
         />
       </Suspense>
     </>

@@ -12,6 +12,7 @@ import { mapDocToGroupLink } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
+import { FaqSection, getCategoryFaqs } from '@/components/seo/faq-section';
 
 type Props = {
   params: Promise<{ category: string }>;
@@ -33,12 +34,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const categoryLabel = categoryInfo ? categoryInfo.label : (resolvedParams.category || '').replace(/-/g, ' ');
 
     const title = `Best ${categoryLabel} WhatsApp Group Links | Groupsor`;
-    const description = `Discover and join the best ${categoryLabel} WhatsApp groups and channels. The largest collection of communities about ${categoryLabel}.`;
+    const description = `Discover and join the best active ${categoryLabel} WhatsApp groups and channels. The largest verified collection of communities about ${categoryLabel}.`;
+    const canonical = `https://groupsor.co.uk/category/${resolvedParams.category}`;
 
     return {
       title,
       description,
+      alternates: {
+        canonical,
+      },
       openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: 'Groupsor',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
         title,
         description,
       },
@@ -118,6 +131,8 @@ export default async function CategoryPage({ params }: Props) {
   const seoContent = `Dive into our extensive collection of active WhatsApp group links dedicated to ${categoryLabel}. Groupsor is your number one source for discovering and joining the most engaging and active communities. Whether you're looking for ${categoryLabel} groups for discussion, sharing content, or connecting with like-minded people, you'll find the best active links right here. Our directory is constantly updated to ensure you get access to fresh and active WhatsApp groups in the ${categoryLabel} category.`;
 
 
+  const faqs = getCategoryFaqs(categoryLabel);
+
   return (
     <Suspense fallback={<div className="container py-12 text-center text-muted-foreground">Loading groups...</div>}>
       <HomePage 
@@ -130,6 +145,11 @@ export default async function CategoryPage({ params }: Props) {
         seoTitle={seoTitle}
         seoContent={seoContent}
         adSettings={adSettings}
+      />
+      <FaqSection
+        title={`Frequently Asked Questions about ${categoryLabel} WhatsApp Groups`}
+        description={`Everything you need to know about joining, participating in, and submitting active ${categoryLabel} communities.`}
+        items={faqs}
       />
     </Suspense>
   );

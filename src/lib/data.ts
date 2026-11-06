@@ -214,27 +214,47 @@ export async function getGroupById(firestore: Firestore, id: string | undefined)
     }
 }
 
-// Fetch related groups with safe error handling
+// Fetch 4-6 related groups with fallback to country or general active groups
 export async function getRelatedGroups(firestore: Firestore, currentGroup: GroupLink): Promise<GroupLink[]> {
     if (!currentGroup) return [];
 
     try {
-        const [querySnapshot, settings] = await Promise.all([
+        const [categorySnapshot, settings] = await Promise.all([
             getDocs(query(
                 collection(firestore, 'groups'),
                 where('category', '==', currentGroup.category),
                 where('__name__', '!=', currentGroup.id),
-                limit(4)
+                limit(6)
             )),
-            getGlobalModerationSettings() // Fetch global settings
+            getGlobalModerationSettings()
         ]);
 
-        return querySnapshot.docs.map(doc => {
+        const related = categorySnapshot.docs.map(doc => {
             const group = mapDocToGroupLink(doc);
-            // Override with the global setting
             group.showClicks = settings.showClicks;
             return group;
         });
+
+        // If fewer than 4 related by category, backfill with same country or recent groups
+        if (related.length < 4) {
+            const existingIds = new Set([currentGroup.id, ...related.map(r => r.id)]);
+            const fallbackSnapshot = await getDocs(query(
+                collection(firestore, 'groups'),
+                where('country', '==', currentGroup.country),
+                limit(6)
+            ));
+
+            fallbackSnapshot.docs.forEach(doc => {
+                if (!existingIds.has(doc.id) && related.length < 6) {
+                    existingIds.add(doc.id);
+                    const group = mapDocToGroupLink(doc);
+                    group.showClicks = settings.showClicks;
+                    related.push(group);
+                }
+            });
+        }
+
+        return related;
 
     } catch (error) {
         console.error("Error fetching related groups:", error);

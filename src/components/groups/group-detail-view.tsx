@@ -44,6 +44,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GroupCard } from '@/components/groups/group-card';
 import { Separator } from '@/components/ui/separator';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SharePopover } from './share-popover';
 import { useEffect, useState, useTransition, useMemo } from 'react';
@@ -582,34 +589,61 @@ export function GroupDetailView({
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Related Group Links</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                  {relatedGroups.length > 0 ? (
-                    relatedGroups.map(relatedGroup => (
-                      <GroupCard
-                        key={relatedGroup.id}
-                        group={relatedGroup}
-                        view="grid"
-                        onTagClick={handleTagClick}
-                        showClicks={settings?.showClicks ?? true}
-                        showRatings={settings?.showRatings ?? true}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">
-                      No related group links found.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Sidebar Ad Slot */}
-              <AdSlot placement="sidebar" adSettings={adSettings} className="mt-6" />
+              <AdSlot placement="sidebar" adSettings={adSettings} className="mt-2" />
             </div>
           </div>
+
+          {/* "Related Groups" Carousel on Detail Pages */}
+          {relatedGroups.length > 0 && (
+            <div className="mt-14 pt-8 border-t">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#25D366] uppercase tracking-wider mb-1">
+                    <Users className="h-3.5 w-3.5" />
+                    <span>Recommended Communities</span>
+                  </div>
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                    Related WhatsApp Groups &amp; Channels
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Explore 4–6 active communities related to {categoryLabel} to connect and chat
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative px-2 sm:px-6">
+                <Carousel
+                  opts={{
+                    align: 'start',
+                    loop: true,
+                  }}
+                  className="w-full"
+                >
+                  <CarouselContent className="-ml-3 sm:-ml-4">
+                    {relatedGroups.map((relatedGroup) => (
+                      <CarouselItem
+                        key={relatedGroup.id}
+                        className="pl-3 sm:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                      >
+                        <div className="h-full">
+                          <GroupCard
+                            group={relatedGroup}
+                            view="grid"
+                            onTagClick={handleTagClick}
+                            showClicks={settings?.showClicks ?? true}
+                            showRatings={settings?.showRatings ?? true}
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden sm:flex -left-4 bg-card/95 hover:bg-card shadow border" />
+                  <CarouselNext className="hidden sm:flex -right-4 bg-card/95 hover:bg-card shadow border" />
+                </Carousel>
+              </div>
+            </div>
+          )}
 
           <Separator className="my-12" />
         </div>

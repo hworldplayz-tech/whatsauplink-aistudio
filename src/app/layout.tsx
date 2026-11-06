@@ -58,6 +58,12 @@ export async function generateMetadata(): Promise<Metadata> {
         icon: '/favicon.ico',
         apple: '/apple-touch-icon.png',
       },
+      alternates: {
+        canonical: 'https://groupsor.co.uk',
+      },
+      verification: {
+        google: 'google-site-verification-token',
+      },
       robots: {
         index: true,
         follow: true,
@@ -169,6 +175,28 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Schema.org WebSite & SearchAction structured data for Google SERP rich presence */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Groupsor',
+              alternateName: ['Groupsor UK', 'Groupsor WhatsApp Directory'],
+              url: 'https://groupsor.co.uk',
+              description: 'The largest collection of active WhatsApp groups and channels.',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: 'https://groupsor.co.uk/?search={search_term_string}',
+                },
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
         {/* The AdSense script is handled via the next/script component */}
         <Script
           async
