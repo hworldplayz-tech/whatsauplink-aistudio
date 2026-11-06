@@ -1,30 +1,45 @@
-
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getGroupById, getRelatedGroups } from '@/lib/data';
 import { GroupDetailView } from '@/components/groups/group-detail-view';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import { getFirestore } from 'firebase/firestore';
 import { getCategories, getCountries } from '@/app/admin/actions';
+import { getModerationSettings } from '@/lib/admin-settings';
 import { getAdSettings } from '@/lib/ad-actions';
+import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
 import type { Metadata } from 'next';
+
+export const revalidate = 60; // Cache detail page response for 60 seconds for rapid instant loading
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
 function getDb() {
-    if (!getApps().length) {
-        initializeApp(firebaseConfig);
-    }
-    return getFirestore(getApp());
+  if (!getApps().length) {
+    initializeApp(firebaseConfig);
+  }
+  return getFirestore(getApp());
 }
+
+// React cache() deduplicates fetch across generateMetadata and the page component
+const getCachedGroup = cache(async (id: string) => {
+  if (!id) return null;
+  const db = getDb();
+  try {
+    return await getGroupById(db, id);
+  } catch (e) {
+    console.error('Error fetching cached group:', e);
+    return null;
+  }
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const resolvedParams = await Promise.resolve(params);
-    const db = getDb();
-    const group = await getGroupById(db, resolvedParams.id);
+    const resolvedParams = await params;
+    const group = await getCachedGroup(resolvedParams.id);
 
     if (!group) {
       return {
@@ -55,24 +70,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function GroupDetailPage({ params }: Props) {
-  const resolvedParams = await Promise.resolve(params);
-  const db = getDb();
-  
-  let group = null;
-  try {
-    group = await getGroupById(db, resolvedParams.id);
-  } catch (e) {
-    console.error('Error fetching group by ID:', e);
-  }
-  
+  const resolvedParams = await params;
+  const group = await getCachedGroup(resolvedParams.id);
+
   if (!group) {
     notFound();
   }
 
+  const db = getDb();
   let relatedGroups: any[] = [];
-  let categories: any[] = [];
-  let countries: any[] = [];
+  let categories: any[] = [...DEFAULT_CATEGORIES];
+  let countries: any[] = [...DEFAULT_COUNTRIES];
   let adSettings: any = { globalEnabled: false, slots: {} };
+  let moderationSettings: any = null;
 
   try {
     const results = await Promise.allSettled([
@@ -80,14 +90,16 @@ export default async function GroupDetailPage({ params }: Props) {
       getCategories(),
       getCountries(),
       getAdSettings(),
+      getModerationSettings(),
     ]);
 
-    relatedGroups = results[0].status === 'fulfilled' ? results[0].value : [];
-    categories = results[1].status === 'fulfilled' ? results[1].value : [];
-    countries = results[2].status === 'fulfilled' ? results[2].value : [];
-    adSettings = results[3].status === 'fulfilled' ? results[3].value : { globalEnabled: false, slots: {} };
+    if (results[0].status === 'fulfilled') relatedGroups = results[0].value;
+    if (results[1].status === 'fulfilled' && results[1].value?.length) categories = results[1].value;
+    if (results[2].status === 'fulfilled' && results[2].value?.length) countries = results[2].value;
+    if (results[3].status === 'fulfilled') adSettings = results[3].value;
+    if (results[4].status === 'fulfilled') moderationSettings = results[4].value;
   } catch (err) {
-    console.error('Failed to load related data for group:', err);
+    console.error('Notice: Error loading supplementary data for group:', err);
   }
 
   return (
@@ -97,6 +109,7 @@ export default async function GroupDetailPage({ params }: Props) {
       categories={categories}
       countries={countries}
       adSettings={adSettings as any}
+      initialSettings={moderationSettings}
     />
   );
 }

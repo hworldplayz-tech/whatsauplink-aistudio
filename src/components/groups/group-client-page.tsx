@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { GroupCard } from '@/components/groups/group-card';
 import { GroupListControls } from '@/components/groups/group-list-controls';
 import type { Category, Country, GroupLink, ModerationSettings } from '@/lib/data';
@@ -45,7 +45,7 @@ export function GroupClientPage({
   const [isLoading, setIsLoading] = useState(isInitiallyLoading);
 
   // Restore scroll position on mount
-  useLayoutEffect(() => {
+  useEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('scrollPosition');
     if (savedScrollPosition) {
       setTimeout(() => {

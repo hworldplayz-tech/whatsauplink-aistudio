@@ -166,10 +166,10 @@ export function GroupListControls({
       <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
         <div className="flex items-center gap-1.5 p-1 bg-muted/80 dark:bg-muted/40 rounded-xl border border-border/60">
           {[
-            { id: 'all', label: 'All', icon: null, count: typeCounts?.all },
-            { id: 'group', label: 'Groups', icon: MessagesSquare, count: typeCounts?.group },
-            { id: 'channel', label: 'Channels', icon: RadioTower, count: typeCounts?.channel },
-            { id: 'community', label: 'Communities', icon: Users, count: typeCounts?.community },
+            { id: 'all', label: 'All', icon: null },
+            { id: 'group', label: 'Groups', icon: MessagesSquare },
+            { id: 'channel', label: 'Channels', icon: RadioTower },
+            { id: 'community', label: 'Communities', icon: Users },
           ].map(tab => {
             const isActive = selectedType === tab.id;
             const Icon = tab.icon;
@@ -178,7 +178,7 @@ export function GroupListControls({
                 key={tab.id}
                 type="button"
                 onClick={() => onTypeChange(tab.id as any)}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                   isActive
                     ? 'bg-[#25D366] text-white shadow-sm font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-background/80'
@@ -186,15 +186,6 @@ export function GroupListControls({
               >
                 {Icon && <Icon className="h-3.5 w-3.5" />}
                 <span>{tab.label}</span>
-                {typeof tab.count === 'number' && tab.count > 0 && (
-                  <span
-                    className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
-                      isActive ? 'bg-white/25 text-white' : 'bg-background text-muted-foreground'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -477,11 +468,6 @@ export function GroupListControls({
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            {typeof totalFilteredCount === 'number' && (
-              <span className="text-muted-foreground font-medium">
-                {totalFilteredCount} {totalFilteredCount === 1 ? 'result' : 'results'}
-              </span>
-            )}
             {onResetFilters && (
               <Button
                 variant="ghost"

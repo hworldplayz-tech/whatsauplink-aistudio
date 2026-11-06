@@ -23,8 +23,13 @@ import {
   ThumbsDown,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw,
+  QrCode,
+  MessageCircle,
+  Smartphone,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { GroupQrDialog } from './group-qr-dialog';
+import { getWhatsAppShareUrl, openSmartWhatsAppJoin, isMobileDevice } from '@/lib/whatsapp-intent';
 import type { GroupLink, Category, Country, ModerationSettings } from '@/lib/data';
 import type { AdSettings } from '@/lib/ad-types';
 import { AdSlot } from '@/components/ads/ad-slot';
@@ -47,7 +52,7 @@ import { doc, increment, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { GroupReportDialog } from './group-report-dialog';
 import { StarRating } from './star-rating';
-import { submitRating, voteLinkWorking, checkLinkHealth } from '@/app/actions';
+import { submitRating, voteLinkWorking } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { getModerationSettings } from '@/lib/admin-settings';
 import { Breadcrumbs, type BreadcrumbItem } from '../layout/breadcrumbs';
@@ -58,14 +63,22 @@ type GroupDetailViewProps = {
   categories: Category[];
   countries: Country[];
   adSettings?: AdSettings;
+  initialSettings?: ModerationSettings | null;
 };
 
-export function GroupDetailView({ group: initialGroup, relatedGroups, categories, countries, adSettings }: GroupDetailViewProps) {
+export function GroupDetailView({ 
+  group: initialGroup, 
+  relatedGroups, 
+  categories, 
+  countries, 
+  adSettings,
+  initialSettings,
+}: GroupDetailViewProps) {
   const [group, setGroup] = useState(initialGroup);
   const [detailUrl, setDetailUrl] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [initialReportReason, setInitialReportReason] = useState<string>('');
-  const [settings, setSettings] = useState<ModerationSettings | null>(null);
+  const [settings, setSettings] = useState<ModerationSettings | null>(initialSettings || null);
   const { firestore } = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -78,8 +91,6 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
   const [workingVotes, setWorkingVotes] = useState<number>(initialGroup.workingVotes || 0);
   const [brokenVotes, setBrokenVotes] = useState<number>(initialGroup.brokenVotes || 0);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
-  const [isCheckingHealth, setIsCheckingHealth] = useState<boolean>(false);
-  const [healthCheckResult, setHealthCheckResult] = useState<{ status: 'active' | 'revoked' | 'full' | 'unknown'; message: string } | null>(null);
 
   const relevantDate = group.lastSubmittedAt || group.createdAt;
   const isRecentlyActive = useMemo(() => {
@@ -95,9 +106,14 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
   const isBroken = group.status === 'revoked' || (group.reportCount ?? 0) >= 2;
   const isFull = group.status === 'full';
 
+  // Mobile vs desktop intent & QR Code modal state
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     // Ensure this runs only on the client
     setDetailUrl(window.location.href);
+    setIsMobile(isMobileDevice());
     
     // Check if user already voted on this link in current session
     if (typeof window !== 'undefined' && group.id) {
@@ -105,13 +121,13 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
       if (voted) setHasVoted(true);
     }
     
-    // Fetch moderation settings on the client
-    async function fetchSettings() {
-        const fetchedSettings = await getModerationSettings();
-        setSettings(fetchedSettings);
+    // Fetch moderation settings on client only if not passed from server
+    if (!initialSettings) {
+      getModerationSettings().then(fetched => {
+        if (fetched) setSettings(fetched);
+      }).catch(err => console.warn('Could not fetch settings:', err));
     }
-    fetchSettings();
-  }, [group.id]);
+  }, [group.id, initialSettings]);
   
   useEffect(() => {
     setGroup(initialGroup);
@@ -150,19 +166,6 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
     }
   };
 
-  const handleCheckLinkHealth = async () => {
-    if (isCheckingHealth || !group.link) return;
-    setIsCheckingHealth(true);
-    try {
-      const result = await checkLinkHealth(group.link);
-      setHealthCheckResult(result);
-    } catch (e) {
-      setHealthCheckResult({ status: 'unknown', message: 'Could not verify link right now. You can still test joining directly.' });
-    } finally {
-      setIsCheckingHealth(false);
-    }
-  };
-
   const handleJoinClick = () => {
     if (firestore && group.id) {
       const groupRef = doc(firestore, 'groups', group.id);
@@ -170,6 +173,11 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
         clicks: increment(1),
       }).catch(err => console.error("Failed to increment click count", err));
     }
+  };
+
+  const handleSmartJoin = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    openSmartWhatsAppJoin(group.link, handleJoinClick);
   };
   
   const handleTagClick = (tag: string) => {
@@ -376,80 +384,7 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
                   )}
 
 
-                  {/* Link Trust & Quality Verification Card */}
-                  <div className={`rounded-xl border p-4 my-6 transition-colors ${
-                    isBroken
-                      ? 'border-red-300 dark:border-red-900 bg-red-50/60 dark:bg-red-950/30'
-                      : isFull
-                      ? 'border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30'
-                      : 'border-emerald-500/25 bg-emerald-50/50 dark:bg-emerald-950/20'
-                  }`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2.5 rounded-full shrink-0 ${
-                          isBroken
-                            ? 'bg-red-100 text-red-600 dark:bg-red-950/80 dark:text-red-400'
-                            : isFull
-                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/80 dark:text-amber-400'
-                            : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400'
-                        }`}>
-                          {isBroken ? <AlertTriangle className="h-5 w-5" /> : isFull ? <Users className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm sm:text-base text-foreground">
-                              {isBroken ? 'Link Issue Reported' : isFull ? 'Group Capacity Full' : 'Active & Verified Invite Link'}
-                            </span>
-                            {isRecentlyActive && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/60 dark:text-emerald-300 rounded-full px-2 py-0.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {isBroken
-                              ? 'Some users reported trouble joining this group. If it works for you, please vote below.'
-                              : isFull
-                              ? 'This group has reached its maximum participant capacity (1,024 members).'
-                              : 'Real WhatsApp invite link verified for member activity and community guidelines.'}
-                          </p>
-                        </div>
-                      </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCheckLinkHealth}
-                        disabled={isCheckingHealth}
-                        className="text-xs h-8 shrink-0 self-start sm:self-center gap-1.5"
-                      >
-                        {isCheckingHealth ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                        )}
-                        <span>{isCheckingHealth ? 'Checking...' : 'Check Link Now'}</span>
-                      </Button>
-                    </div>
-
-                    {healthCheckResult && (
-                      <div className={`mt-3 pt-3 border-t text-xs flex items-center gap-2 font-medium ${
-                        healthCheckResult.status === 'revoked'
-                          ? 'text-destructive'
-                          : healthCheckResult.status === 'full'
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
-                      }`}>
-                        {healthCheckResult.status === 'active' ? (
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                        ) : (
-                          <AlertTriangle className="h-4 w-4 shrink-0" />
-                        )}
-                        <span>{healthCheckResult.message}</span>
-                      </div>
-                    )}
-                  </div>
 
                   <p className="text-base text-foreground/80 whitespace-pre-wrap mt-6">
                     {group.description}
@@ -470,22 +405,45 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
                   <AdSlot placement="group_detail_bottom" adSettings={adSettings} className="mt-6" />
                 </CardContent>
                 <CardFooter className="flex-col gap-4 items-stretch">
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild className="w-full text-lg py-6 flex-1 sm:w-auto bg-[#25D366] hover:bg-[#20ba59] text-white">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-2.5">
+                    <Button 
+                      type="button"
+                      onClick={handleSmartJoin} 
+                      className="w-full text-lg py-6 flex-1 sm:w-auto bg-[#25D366] hover:bg-[#20ba59] text-white font-bold shadow-md gap-2"
+                    >
+                      <MessageCircle className="h-5 w-5 fill-white" />
+                      <span>{isMobile ? 'Open in WhatsApp App' : `Join WhatsApp ${group.type === 'channel' ? 'Channel' : 'Group'}`}</span>
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full text-base py-6 sm:w-auto gap-2 border-emerald-500/30 hover:border-[#25D366] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                      onClick={() => setIsQrOpen(true)}
+                    >
+                      <QrCode className="h-5 w-5 text-[#25D366]" />
+                      <span>Scan QR to Join</span>
+                    </Button>
+
+                    <Button
+                      asChild
+                      className="w-full text-base py-6 sm:w-auto bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 gap-2 font-medium"
+                    >
                       <a
-                        href={group.link}
+                        href={getWhatsAppShareUrl(group.title, group.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={handleJoinClick}
                       >
-                        Join WhatsApp {group.type === 'channel' ? 'Channel' : 'Group'}
-                        <ExternalLink className="ml-2 h-4 w-4" />
+                        <MessageCircle className="h-5 w-5 fill-current" />
+                        <span>Share to WhatsApp</span>
                       </a>
                     </Button>
+
                     <div className="flex gap-2 w-full sm:w-auto">
                       {detailUrl && (
                           <SharePopover title={group.title} url={detailUrl}>
-                          <Button variant="outline" className="w-full text-lg py-6 sm:w-auto">
+                          <Button variant="outline" className="w-full text-base py-6 sm:w-auto">
                               <Share2 className="mr-2 h-5 w-5" />
                               Share
                           </Button>
@@ -493,7 +451,7 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
                       )}
                        <Button 
                         variant="destructive" 
-                        className="w-full text-lg py-6 sm:w-auto" 
+                        className="w-full text-base py-6 sm:w-auto" 
                         onClick={() => {
                           setInitialReportReason('');
                           setIsReportOpen(true);
@@ -584,7 +542,46 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
               </div>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              {/* Desktop Instant Scan QR to Join Card */}
+              <Card className="hidden lg:block overflow-hidden border-2 border-emerald-500/20 bg-card">
+                <CardHeader className="bg-emerald-50/60 dark:bg-emerald-950/40 pb-3">
+                  <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                    <QrCode className="h-5 w-5 text-[#25D366]" />
+                    <span>Scan with Phone to Join</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-5 flex flex-col items-center text-center">
+                  <div 
+                    onClick={() => setIsQrOpen(true)}
+                    className="p-3 bg-white rounded-2xl shadow-sm border border-emerald-500/30 cursor-pointer hover:scale-105 transition-transform"
+                    title="Click to expand or download QR Code"
+                  >
+                    <QRCodeSVG
+                      value={group.link}
+                      size={165}
+                      level="H"
+                      fgColor="#075E54"
+                      bgColor="#ffffff"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground font-medium">
+                    <Smartphone className="h-4 w-4 text-[#25D366]" />
+                    <span>Point your phone camera to join instantly</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsQrOpen(true)}
+                    className="mt-2 text-xs text-[#25D366] hover:text-[#20ba59] gap-1"
+                  >
+                    <span>Enlarge &amp; Save QR</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Related Group Links</CardTitle>
@@ -622,6 +619,12 @@ export function GroupDetailView({ group: initialGroup, relatedGroups, categories
         isOpen={isReportOpen}
         onOpenChange={setIsReportOpen}
         initialReason={initialReportReason}
+      />
+      <GroupQrDialog
+        group={group}
+        isOpen={isQrOpen}
+        onOpenChange={setIsQrOpen}
+        onJoinClick={handleJoinClick}
       />
     </div>
   );

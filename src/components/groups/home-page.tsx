@@ -120,9 +120,9 @@ export function HomePage({
   };
   
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col" suppressHydrationWarning>
       {breadcrumbItems && <Breadcrumbs items={breadcrumbItems} />}
-      <main className="flex-1 pb-20 md:pb-0">
+      <main className="flex-1 pb-20 md:pb-0" suppressHydrationWarning>
         <section className="bg-card/50 border-b border-primary/20">
             <div className="container py-12 md:py-16 text-center">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground">

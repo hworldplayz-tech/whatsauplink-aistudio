@@ -1,10 +1,23 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, Tag, Share2, Users, Clock, RadioTower, Eye, Star, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { 
+  ExternalLink, 
+  Tag, 
+  Share2, 
+  Users, 
+  Clock, 
+  RadioTower, 
+  Eye, 
+  Star, 
+  CheckCircle2, 
+  AlertTriangle,
+  QrCode,
+  MessageCircle
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +26,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { MessagesSquare } from 'lucide-react';
 import { SharePopover } from './share-popover';
+import { GroupQrDialog } from './group-qr-dialog';
+import { getWhatsAppShareUrl } from '@/lib/whatsapp-intent';
 import NProgress from 'nprogress';
 import { StarRating } from './star-rating';
 
@@ -26,6 +41,8 @@ type GroupCardProps = {
 
 export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: GroupCardProps) {
   const router = useRouter();
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const whatsappShareUrl = getWhatsAppShareUrl(group.title, group.id);
   
   // Use the last submitted date if available, otherwise use creation date
   const relevantDate = group.lastSubmittedAt || group.createdAt;
@@ -76,8 +93,9 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
       <Card 
         className="h-full flex flex-col items-center justify-center p-4 text-center relative transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card group"
         onMouseEnter={handlePrefetch}
+        onTouchStart={handlePrefetch}
       >
-        <Link href={detailUrl} className="block absolute inset-0 z-0" onClick={handleCardClick} />
+        <Link href={detailUrl} prefetch={true} className="block absolute inset-0 z-0" onClick={handleCardClick} />
         <Badge className="absolute top-2 left-2 text-xs capitalize bg-primary text-primary-foreground hover:bg-primary/80 z-10">{group.country}</Badge>
         <Badge className="absolute top-2 right-2 text-xs bg-accent text-accent-foreground hover:bg-accent/80 z-10">{group.category}</Badge>
         <Avatar className="h-24 w-24 text-primary border-2 border-primary/20">
@@ -89,7 +107,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
         <h3 className="font-semibold text-sm line-clamp-2 mt-3">{group.title}</h3>
         
         {/* Link Quality & Trust Status Badges */}
-        <div className="mt-1 flex items-center justify-center">
+        <div className="mt-1 flex items-center justify-center" suppressHydrationWarning>
           {isBroken ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 text-[10px] font-semibold">
               <AlertTriangle className="h-2.5 w-2.5" /> Link Issue
@@ -103,7 +121,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
               <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" /> Verified Link
             </span>
           ) : isRecentlyActive ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+            <span suppressHydrationWarning className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
             </span>
           ) : null}
@@ -144,14 +162,45 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
             </div>
         )}
 
-        <div className="absolute bottom-2 right-2 z-10 h-8 w-8 rounded-full bg-background/50 transition-opacity">
-            <SharePopover title={group.title} url={detailUrl}>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                    <Share2 className="h-4 w-4" />
-                    <span className="sr-only">Share</span>
+        <div className="mt-3 flex items-center justify-between w-full pt-2 border-t border-border/40 gap-1 z-10 relative">
+            <a
+                href={whatsappShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Share to WhatsApp"
+                className="inline-flex items-center justify-center h-8 px-2.5 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-white transition-all text-xs font-semibold gap-1"
+            >
+                <MessageCircle className="h-3.5 w-3.5 fill-current" />
+                <span>Share</span>
+            </a>
+
+            <div className="flex items-center gap-1">
+                <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setIsQrOpen(true);
+                    }}
+                    title="Scan QR Code to join on phone"
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                >
+                    <QrCode className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>QR</span>
                 </Button>
-            </SharePopover>
+                <SharePopover title={group.title} url={detailUrl}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                        <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="sr-only">Share</span>
+                    </Button>
+                </SharePopover>
+            </div>
         </div>
+
+        <GroupQrDialog group={group} isOpen={isQrOpen} onOpenChange={setIsQrOpen} />
       </Card>
     );
   }
@@ -161,6 +210,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
     <Card 
         className="transition-all duration-300 hover:shadow-xl overflow-hidden flex flex-col sm:flex-row"
         onMouseEnter={handlePrefetch}
+        onTouchStart={handlePrefetch}
     >
       <div className="p-4 sm:p-6 flex items-center sm:border-r">
           <Avatar className="h-16 w-16 text-primary">
@@ -174,7 +224,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
         <CardHeader className="pt-0 sm:pt-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap" suppressHydrationWarning>
                 <CardTitle className="text-lg font-semibold">{group.title}</CardTitle>
                 {isBroken ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 text-[10px] font-semibold">
@@ -189,7 +239,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
                     <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" /> Verified Link
                   </span>
                 ) : isRecentlyActive ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+                  <span suppressHydrationWarning className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active Today
                   </span>
                 ) : null}
@@ -246,15 +296,47 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
                 </span>
             )}
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+            <Button
+                asChild
+                size="sm"
+                className="h-10 px-3.5 bg-[#25D366] hover:bg-[#20ba59] text-white font-medium gap-1.5 z-10"
+            >
+                <a
+                    href={whatsappShareUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <MessageCircle className="h-4 w-4 fill-white" />
+                    <span>Share to WhatsApp</span>
+                </a>
+            </Button>
+
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setIsQrOpen(true);
+                }}
+                className="h-10 px-3 gap-1.5 z-10 text-xs font-medium"
+                title="Scan QR to join on mobile"
+            >
+                <QrCode className="h-4 w-4 text-[#25D366]" />
+                <span>Scan QR</span>
+            </Button>
+
             <SharePopover title={group.title} url={detailUrl}>
-                <Button variant="outline" size="icon" className="h-10 w-10">
+                <Button variant="outline" size="icon" className="h-10 w-10 z-10" onClick={(e) => e.stopPropagation()}>
                     <Share2 className="h-4 w-4" />
                     <span className="sr-only">Share</span>
                 </Button>
             </SharePopover>
-            <Button asChild className="w-full z-10" variant="secondary" onClick={handleCardClick}>
-                <Link href={detailUrl}>
+            <Button asChild className="w-full sm:w-auto z-10" variant="secondary" onClick={handleCardClick}>
+                <Link href={detailUrl} prefetch={true}>
                 View Details
                 <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
@@ -262,6 +344,8 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
           </div>
         </CardFooter>
       </div>
+
+      <GroupQrDialog group={group} isOpen={isQrOpen} onOpenChange={setIsQrOpen} />
     </Card>
   );
 }
