@@ -202,7 +202,7 @@ export function GroupClientPage({
   const gridClass = view === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col gap-6';
 
   return (
-    <section className="container py-8 md:py-12">
+    <section className="container mx-auto py-8 md:py-12">
         <div className="mx-auto max-w-5xl">
         <GroupListControls 
             view={view}

@@ -124,7 +124,7 @@ export function HomePage({
       {breadcrumbItems && <Breadcrumbs items={breadcrumbItems} />}
       <main className="flex-1 pb-20 md:pb-0" suppressHydrationWarning>
         <section className="bg-card/50 border-b border-primary/20">
-            <div className="container py-12 md:py-16 text-center">
+            <div className="container mx-auto py-12 md:py-16 text-center">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tighter text-foreground">
                 {pageTitle || 'The largest Collection of Whatsapp groups and channels'}
               </h1>
@@ -145,7 +145,7 @@ export function HomePage({
         {isHomePage && children}
         
         {settings.showFeatured && featuredGroups.length > 0 && !isDynamicPage && (
-          <section className="container py-8 md:py-12">
+          <section className="container mx-auto py-8 md:py-12">
             <div className="mx-auto max-w-5xl">
               <h2 className="mb-6 text-2xl font-bold tracking-tight text-foreground">Featured Groups</h2>
               {renderFeaturedGroups()}

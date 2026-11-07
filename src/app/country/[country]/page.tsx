@@ -159,7 +159,7 @@ export default async function CountryPage({ params }: Props) {
 
       {/* Sub-city & Regional Exploration Links */}
       {cities.length > 0 && (
-        <section className="container py-8 border-t bg-muted/20">
+        <section className="container mx-auto py-8 border-t bg-muted/20">
           <div className="mx-auto max-w-5xl">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4 text-foreground">
               <MapPin className="h-5 w-5 text-primary" />

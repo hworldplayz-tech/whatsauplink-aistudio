@@ -299,7 +299,7 @@ export function GroupDetailView({
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <div className="container py-8 md:py-12">
+        <div className="container mx-auto py-8 md:py-12">
           {/* Top Banner Ad for Group Detail */}
           <AdSlot placement="group_detail_top" adSettings={adSettings} className="mb-6" />
 

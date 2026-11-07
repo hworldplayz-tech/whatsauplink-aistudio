@@ -12,7 +12,7 @@ export default async function ContactPage() {
     <>
       <Breadcrumbs items={breadcrumbItems} />
       <main className="flex-1">
-        <div className="container py-12 md:py-24 px-4 sm:px-6">
+        <div className="container mx-auto py-12 md:py-24 px-4 sm:px-6">
           <div className="mx-auto max-w-xl space-y-8">
             <div className="space-y-4 text-center">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl">Contact Us</h1>
@@ -20,7 +20,7 @@ export default async function ContactPage() {
                 Have questions or feedback about our directory of WhatsApp group links? We&apos;d love to hear from you.
               </p>
               <p className="text-sm text-muted-foreground">
-                You can also reach us directly at <a href="mailto:syedhamzaalinaqvi4@gmail.com" className="text-primary underline">syedhamzaalinaqvi4@gmail.com</a>.
+                You can also reach us directly at <a href="mailto:contact@groupsor.co.uk" className="text-primary underline">contact@groupsor.co.uk</a>.
               </p>
             </div>
             <ContactForm />

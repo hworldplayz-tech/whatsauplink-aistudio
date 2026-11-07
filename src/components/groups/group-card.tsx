@@ -191,12 +191,14 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
                     <QrCode className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>QR</span>
                 </Button>
-                <SharePopover title={group.title} url={detailUrl}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
-                        <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="sr-only">Share</span>
-                    </Button>
-                </SharePopover>
+                <div className="hidden sm:inline-flex">
+                    <SharePopover title={group.title} url={detailUrl}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                            <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="sr-only">Share</span>
+                        </Button>
+                    </SharePopover>
+                </div>
             </div>
         </div>
 

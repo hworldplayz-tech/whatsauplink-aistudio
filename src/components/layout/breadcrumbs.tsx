@@ -21,7 +21,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
   
   return (
     <div className="bg-card/50 border-b">
-        <div className="container py-3">
+        <div className="container mx-auto py-3">
             <nav aria-label="Breadcrumb">
                 <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 {items.map((item, index) => (

@@ -42,7 +42,7 @@ export function FaqSection({
   };
 
   return (
-    <section className={`container py-12 md:py-16 ${className}`}>
+    <section className={`container mx-auto py-12 md:py-16 ${className}`}>
       {/* Schema.org FAQPage Structured Data Injection for Google Rich Snippets */}
       <script
         type="application/ld+json"

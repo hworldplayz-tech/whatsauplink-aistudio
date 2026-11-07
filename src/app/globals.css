@@ -98,3 +98,12 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+@layer utilities {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+

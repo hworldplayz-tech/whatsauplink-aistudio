@@ -221,14 +221,14 @@ export default async function RootLayout({
             </Suspense>
             
             {/* Header Top Leaderboard Ad */}
-            <AdSlot placement="header_top" adSettings={adSettings} className="container max-w-7xl px-4 my-2" />
+            <AdSlot placement="header_top" adSettings={adSettings} className="container mx-auto max-w-7xl px-4 my-2" />
 
             <main className="flex-1 relative z-10">
               {children}
             </main>
 
             {/* Above Footer Banner Ad */}
-            <AdSlot placement="footer_top" adSettings={adSettings} className="container max-w-7xl px-4 my-6" />
+            <AdSlot placement="footer_top" adSettings={adSettings} className="container mx-auto max-w-7xl px-4 my-6" />
 
             {/* Popups & Sticky Ads */}
             <PopupAdModal adSettings={adSettings} />
@@ -237,7 +237,7 @@ export default async function RootLayout({
             <ScrollToTop />
             <Toaster />
             <footer className="border-t bg-card">
-              <div className="container py-12">
+              <div className="container mx-auto py-12">
                 <div className={`flex flex-col md:flex-row items-center gap-12 ${moderationSettings?.showNewsletter ? 'justify-between' : 'justify-center'}`}>
                   <div className={`flex flex-col items-center ${moderationSettings?.showNewsletter ? 'md:items-start text-center md:text-left' : 'text-center md:items-center md:text-center'}`}>
                       <h3 className="text-xl font-bold">
