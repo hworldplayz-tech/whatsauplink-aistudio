@@ -17,6 +17,7 @@ import { AdSlot } from '@/components/ads/ad-slot';
 import { PopupAdModal, StickyBottomAdBar } from '@/components/ads/popup-ad';
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
 import { PinnedCricketWidget } from '@/components/cricket/pinned-cricket-widget';
+import { GroupAlertBanner } from '@/components/notifications/group-alert-banner';
 import Link from 'next/link';
 
 const inter = Inter({ 
@@ -213,6 +214,7 @@ export default async function RootLayout({
         </Suspense>
         <div className="flex flex-col min-h-screen">
           <Providers>
+            <GroupAlertBanner />
             <Suspense fallback={<header className="h-16 border-b bg-card" />}>
               <Header 
                 navLinks={layoutSettings?.navLinks || DEFAULT_LAYOUT_FALLBACK.navLinks} 

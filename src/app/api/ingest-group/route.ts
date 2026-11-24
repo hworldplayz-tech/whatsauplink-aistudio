@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES, DEFAULT_LANGUAGES } from '@/lib/constants';
+import { sendNewGroupPushNotification } from '@/lib/fcm-server';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -554,6 +555,15 @@ export async function POST(req: NextRequest) {
     };
 
     const docRef = await addDoc(groupsRef, newGroup);
+
+    await sendNewGroupPushNotification({
+      groupId: docRef.id,
+      title: finalTitle,
+      type: newGroup.type,
+      imageUrl: finalImageUrl,
+    }).catch((err) => {
+      console.error('Background push send error (ingest):', err);
+    });
 
     revalidatePath('/');
     revalidatePath(`/category/${categoryResult.value}`);

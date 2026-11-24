@@ -16,6 +16,7 @@ import type { FormState } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { differenceInMilliseconds } from 'date-fns';
 import { cookies } from 'next/headers';
+import { sendNewGroupPushNotification } from '@/lib/fcm-server';
 
 // Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
@@ -451,6 +452,15 @@ export async function submitGroup(
         ratingCount: 0,
       };
       const docRef = await addDoc(collection(db, 'groups'), newGroupData);
+
+      await sendNewGroupPushNotification({
+        groupId: docRef.id,
+        title: groupData.title,
+        type: groupData.type,
+        imageUrl: groupData.imageUrl,
+      }).catch((err) => {
+        console.error('Background push send error (submit):', err);
+      });
 
       revalidatePath('/');
       revalidatePath(`/group/invite/${docRef.id}`);
