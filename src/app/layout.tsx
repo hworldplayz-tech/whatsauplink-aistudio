@@ -263,6 +263,7 @@ export default async function RootLayout({
                         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
                         <Link href="/cricket" className="hover:text-foreground transition-colors font-medium text-foreground">Cricket</Link>
                         <Link href="/submit" className="hover:text-foreground transition-colors">Submit Group</Link>
+                        <Link href="/embed" className="hover:text-foreground transition-colors">Embed Widget</Link>
                         <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
                         <Link href="/about" className="hover:text-foreground transition-colors">About</Link>
                         <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>

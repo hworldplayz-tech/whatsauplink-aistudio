@@ -28,7 +28,8 @@ if (fs.existsSync(ENV_FILE)) {
 }
 
 const TARGET_URL = (process.env.TARGET_URL || 'https://groupsor.link').replace(/\/+$/, '');
-const INGEST_URL = process.env.GROUPSOR_INGEST_URL || 'https://www.groupsor.co.uk/api/ingest-group';
+const rawIngestUrl = process.env.GROUPSOR_INGEST_URL || 'https://www.groupsor.co.uk/api/ingest-group';
+const INGEST_URL = rawIngestUrl.replace('https://groupsor.co.uk/', 'https://www.groupsor.co.uk/');
 const INGEST_SECRET = (process.env.INGEST_API_SECRET || '').trim();
 const MAX_LATEST = Math.max(1, Math.min(25, Number(process.env.MAX_LATEST || 10)));
 const POLL_INTERVAL_MINUTES = Math.max(1, Number(process.env.POLL_INTERVAL_MINUTES || 5));
