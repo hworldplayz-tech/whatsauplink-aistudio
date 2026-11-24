@@ -30,6 +30,9 @@ const moderationSettingsSchema = z.object({
     showClicks: z.enum(['on', 'off']).transform(val => val === 'on'),
     showTicker: z.enum(['on', 'off']).transform(val => val === 'on'),
     tickerSpeed: z.coerce.number().min(5).max(100),
+    enableCricketWidget: z.enum(['on', 'off']).optional().transform(val => val !== 'off'),
+    cricketWidgetMajorOnly: z.enum(['on', 'off']).optional().transform(val => val !== 'off'),
+    cricketPinnedMatchId: z.string().optional().default(''),
 });
 
 export async function saveModerationSettings(formData: FormData): Promise<{ success: boolean; message: string }> {
@@ -46,6 +49,9 @@ export async function saveModerationSettings(formData: FormData): Promise<{ succ
         showClicks: formData.get('showClicks'),
         showTicker: formData.get('showTicker'),
         tickerSpeed: formData.get('tickerSpeed'),
+        enableCricketWidget: formData.get('enableCricketWidget') || 'on',
+        cricketWidgetMajorOnly: formData.get('cricketWidgetMajorOnly') || 'on',
+        cricketPinnedMatchId: formData.get('cricketPinnedMatchId') || '',
     });
     
     if (!validatedFields.success) {

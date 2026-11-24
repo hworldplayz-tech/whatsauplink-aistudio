@@ -16,6 +16,7 @@ import Script from 'next/script';
 import { AdSlot } from '@/components/ads/ad-slot';
 import { PopupAdModal, StickyBottomAdBar } from '@/components/ads/popup-ad';
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
+import { PinnedCricketWidget } from '@/components/cricket/pinned-cricket-widget';
 import Link from 'next/link';
 
 const inter = Inter({ 
@@ -96,6 +97,7 @@ const DEFAULT_LAYOUT_FALLBACK = {
   logoUrl: '/groupsor_logo.png',
   navLinks: [
     { id: '1', label: 'Home', href: '/' },
+    { id: 'cricket', label: 'Cricket', href: '/cricket' },
     { id: '2', label: 'Submit Group', href: '/submit' },
     { id: '7', label: 'Blog', href: '/blog' },
     { id: '3', label: 'About', href: '/about' },
@@ -234,6 +236,13 @@ export default async function RootLayout({
             <PopupAdModal adSettings={adSettings} />
             <StickyBottomAdBar adSettings={adSettings} />
 
+            {/* Floating Live Cricket Scoreboard Widget */}
+            <PinnedCricketWidget
+              enabled={moderationSettings?.enableCricketWidget ?? true}
+              majorOnly={moderationSettings?.cricketWidgetMajorOnly ?? true}
+              pinnedMatchId={moderationSettings?.cricketPinnedMatchId || ''}
+            />
+
             <ScrollToTop />
             <Toaster />
             <footer className="border-t bg-card">
@@ -250,7 +259,17 @@ export default async function RootLayout({
                           ? layoutSettings.footerContent.paragraph
                           : 'The largest Collection of Whatsapp groups and channels from around the world.'}
                       </p>
-                       <p className="text-sm text-muted-foreground mt-8">
+                      <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-6 text-sm text-muted-foreground">
+                        <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+                        <Link href="/cricket" className="hover:text-foreground transition-colors font-medium text-foreground">Cricket</Link>
+                        <Link href="/submit" className="hover:text-foreground transition-colors">Submit Group</Link>
+                        <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
+                        <Link href="/about" className="hover:text-foreground transition-colors">About</Link>
+                        <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+                        <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+                        <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+                      </nav>
+                       <p className="text-sm text-muted-foreground mt-6">
                           © 2026 |{' '}
                           <Link href="/" className="hover:underline font-medium text-foreground">
                             Groupsor

@@ -52,6 +52,9 @@ export type ModerationSettings = {
     showRatings: boolean;
     showTicker: boolean;
     tickerSpeed: number;
+    enableCricketWidget?: boolean;
+    cricketWidgetMajorOnly?: boolean;
+    cricketPinnedMatchId?: string;
 };
 
 export type Category = {

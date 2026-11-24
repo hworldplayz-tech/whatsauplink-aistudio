@@ -47,6 +47,18 @@ export function Header({
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   
   const finalLogoUrl = logoUrl || '/groupsor_logo.png';
+  const effectiveNavLinks = React.useMemo(() => {
+    const hasCricket = navLinks.some((l) => l.href === '/cricket');
+    if (hasCricket) return navLinks;
+    const cricketLink: NavLink = { id: 'cricket', label: 'Cricket', href: '/cricket' };
+    const homeIdx = navLinks.findIndex((l) => l.href === '/');
+    if (homeIdx >= 0) {
+      const next = [...navLinks];
+      next.splice(homeIdx + 1, 0, cricketLink);
+      return next;
+    }
+    return [cricketLink, ...navLinks];
+  }, [navLinks]);
 
   // Effect to sync dialog state with URL on initial load and back/forward navigation
   useEffect(() => {
@@ -119,7 +131,7 @@ export function Header({
             </h1>
         </Link>
         <nav className="flex flex-col gap-1 text-lg font-medium">
-             {navLinks.filter(link => link.href === '/').map(link => (
+             {effectiveNavLinks.filter(link => link.href === '/').map(link => (
                  <Link key={link.id} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-foreground transition-colors hover:text-primary">
                     {link.label}
                  </Link>
@@ -174,7 +186,7 @@ export function Header({
                 </AccordionItem>
             </Accordion>
             
-            {navLinks.filter(link => !['/', '/submit'].includes(link.href)).map((link) => (
+            {effectiveNavLinks.filter(link => !['/', '/submit'].includes(link.href)).map((link) => (
               <Link key={link.id} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-lg font-medium text-foreground transition-colors hover:text-primary">
                 {link.label}
               </Link>
@@ -203,7 +215,7 @@ export function Header({
           
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-                {navLinks.filter(link => link.href === '/').map(link => (
+                {effectiveNavLinks.filter(link => link.href === '/').map(link => (
                     <NavigationMenuItem key={link.id}>
                         <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                           <Link href={link.href}>
@@ -251,7 +263,7 @@ export function Header({
                     </NavigationMenuContent>
                 </NavigationMenuItem>
 
-                 {navLinks.filter(link => !['/', '/submit'].includes(link.href)).map(link => (
+                 {effectiveNavLinks.filter(link => !['/', '/submit'].includes(link.href)).map(link => (
                     <NavigationMenuItem key={link.id}>
                          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                            <Link href={link.href}>

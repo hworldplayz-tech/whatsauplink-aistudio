@@ -13,10 +13,11 @@ import { Switch } from '../ui/switch';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../ui/button';
-import { LayoutGrid, List, Loader2, SlidersHorizontal, FileText, Star, Eye, Zap } from 'lucide-react';
+import { LayoutGrid, List, Loader2, SlidersHorizontal, FileText, Star, Eye, Zap, Trophy } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { Slider } from '../ui/slider';
+import { useCricketFeed } from '../cricket/cricket-provider';
 
 const moderationSettingsSchema = z.object({
     showClicks: z.boolean(),
@@ -31,6 +32,9 @@ const moderationSettingsSchema = z.object({
     showRatings: z.boolean(),
     showTicker: z.boolean(),
     tickerSpeed: z.number().min(5).max(100),
+    enableCricketWidget: z.boolean(),
+    cricketWidgetMajorOnly: z.boolean(),
+    cricketPinnedMatchId: z.string().optional(),
 });
 
 type ModerationFormValues = z.infer<typeof moderationSettingsSchema>;
@@ -43,16 +47,27 @@ type AdminModerationSettingsProps = {
 export function AdminModerationSettings({ initialSettings, onSettingsChange }: AdminModerationSettingsProps) {
     const { toast } = useToast();
     const [isSaving, startSaving] = useTransition();
+    const { overview } = useCricketFeed();
+
+    const normalizedDefaults: ModerationFormValues = {
+        ...initialSettings,
+        enableCricketWidget: initialSettings.enableCricketWidget ?? true,
+        cricketWidgetMajorOnly: initialSettings.cricketWidgetMajorOnly ?? true,
+        cricketPinnedMatchId: initialSettings.cricketPinnedMatchId ?? '',
+    };
 
     const form = useForm<ModerationFormValues>({
         resolver: zodResolver(moderationSettingsSchema),
-        defaultValues: {
-            ...initialSettings
-        },
+        defaultValues: normalizedDefaults,
     });
 
     useEffect(() => {
-        form.reset(initialSettings);
+        form.reset({
+            ...initialSettings,
+            enableCricketWidget: initialSettings.enableCricketWidget ?? true,
+            cricketWidgetMajorOnly: initialSettings.cricketWidgetMajorOnly ?? true,
+            cricketPinnedMatchId: initialSettings.cricketPinnedMatchId ?? '',
+        });
     }, [initialSettings, form]);
 
     const onSubmit = (data: ModerationFormValues) => {
@@ -70,6 +85,9 @@ export function AdminModerationSettings({ initialSettings, onSettingsChange }: A
             formData.append('showClicks', data.showClicks ? 'on' : 'off');
             formData.append('showTicker', data.showTicker ? 'on' : 'off');
             formData.append('tickerSpeed', String(data.tickerSpeed));
+            formData.append('enableCricketWidget', data.enableCricketWidget ? 'on' : 'off');
+            formData.append('cricketWidgetMajorOnly', data.cricketWidgetMajorOnly ? 'on' : 'off');
+            formData.append('cricketPinnedMatchId', data.cricketPinnedMatchId || '');
             
             const result = await saveModerationSettings(formData);
 
@@ -382,6 +400,98 @@ export function AdminModerationSettings({ initialSettings, onSettingsChange }: A
                                                             value={[field.value]}
                                                             onValueChange={(value) => field.onChange(value[0])}
                                                             disabled={!form.watch('showTicker')}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className='pb-4'>
+                                        <CardTitle className='text-lg flex items-center gap-2'><Trophy className='h-5 w-5 text-primary'/> Live Cricket Score Widget</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <FormField
+                                            control={form.control}
+                                            name="enableCricketWidget"
+                                            render={({ field }) => (
+                                                <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel htmlFor="enable-cricket-widget" className="text-base">Enable Floating Score Widget</FormLabel>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Show the draggable live cricket widget across pages.
+                                                        </p>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch
+                                                            id="enable-cricket-widget"
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="cricketWidgetMajorOnly"
+                                            render={({ field }) => (
+                                                <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel htmlFor="cricket-major-only" className="text-base">Major Matches Only</FormLabel>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Auto-pin only major live matches (toggle off to include all live matches).
+                                                        </p>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch
+                                                            id="cricket-major-only"
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                            disabled={!form.watch('enableCricketWidget')}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="cricketPinnedMatchId"
+                                            render={({ field }) => (
+                                                <FormItem className="rounded-lg border p-4 space-y-2">
+                                                    <FormLabel className="text-base">Pinned Match ID (Optional)</FormLabel>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Prioritize a specific live match ID in the floating widget, or leave auto.
+                                                    </p>
+                                                    {overview?.live && overview.live.length > 0 && (
+                                                        <Select
+                                                            value={field.value || 'auto'}
+                                                            onValueChange={(val) => field.onChange(val === 'auto' ? '' : val)}
+                                                            disabled={!form.watch('enableCricketWidget')}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Auto-select live match" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="auto">Auto (All Eligible Live Matches)</SelectItem>
+                                                                {overview.live.map((m) => (
+                                                                    <SelectItem key={m.id} value={m.id}>
+                                                                        {m.teams.join(' vs ')} {m.isMajor ? '(Major)' : ''}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter custom Match ID or leave blank for auto"
+                                                            value={field.value || ''}
+                                                            onChange={field.onChange}
+                                                            disabled={!form.watch('enableCricketWidget')}
                                                         />
                                                     </FormControl>
                                                 </FormItem>

@@ -29,6 +29,9 @@ export async function getModerationSettings(): Promise<ModerationSettings> {
         showRatings: true,
         showTicker: true,
         tickerSpeed: 40,
+        enableCricketWidget: true,
+        cricketWidgetMajorOnly: true,
+        cricketPinnedMatchId: '',
     };
 
     try {

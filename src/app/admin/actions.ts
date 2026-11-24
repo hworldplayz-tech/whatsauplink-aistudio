@@ -357,6 +357,7 @@ const defaultLayoutSettings: LayoutSettings = {
     logoUrl: '/groupsor_logo.png',
     navLinks: [
         { id: '1', label: 'Home', href: '/' },
+        { id: 'cricket', label: 'Cricket', href: '/cricket' },
         { id: '2', label: 'Submit Group', href: '/submit' },
         { id: '7', label: 'Blog', href: '/blog' },
         { id: '3', label: 'About', href: '/about' },
