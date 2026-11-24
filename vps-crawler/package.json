@@ -1,0 +1,13 @@
+{
+  "name": "groupsor-vps-crawler",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node crawler.mjs",
+    "once": "node crawler.mjs --once"
+  },
+  "dependencies": {
+    "playwright": "^1.49.1"
+  }
+}
