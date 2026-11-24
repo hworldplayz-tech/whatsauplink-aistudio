@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
     const searchQ = (searchParams.get('q') || '').trim().toLowerCase().slice(0, 60);
     const rawLimit = Number(searchParams.get('limit') || 6);
     const limitCount = Number.isFinite(rawLimit) ? Math.max(1, Math.min(20, Math.floor(rawLimit))) : 6;
+    const rawPage = Number(searchParams.get('page') || 1);
+    const page = Number.isFinite(rawPage) ? Math.max(1, Math.min(50, Math.floor(rawPage))) : 1;
 
     const db = getFirestoreInstance();
     const groupsCol = collection(db, 'groups');
@@ -70,12 +72,14 @@ export async function GET(req: NextRequest) {
       constraints.push(where('type', '==', typeParam));
     }
 
+    const fetchWindow = Math.min(300, Math.max(80, page * limitCount + 25));
+
     let snapshot;
     if (constraints.length === 0) {
-      snapshot = await getDocs(query(groupsCol, orderBy('lastSubmittedAt', 'desc'), fsLimit(60)));
+      snapshot = await getDocs(query(groupsCol, orderBy('lastSubmittedAt', 'desc'), fsLimit(fetchWindow)));
     } else {
       // Avoid composite index errors by filtering in Firestore and sorting in memory
-      snapshot = await getDocs(query(groupsCol, ...constraints, fsLimit(80)));
+      snapshot = await getDocs(query(groupsCol, ...constraints, fsLimit(fetchWindow)));
     }
 
     let items = snapshot.docs.map(mapDocToGroupLink);
@@ -95,8 +99,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    const startIndex = (page - 1) * limitCount;
+    const pagedItems = items.slice(startIndex, startIndex + limitCount);
+    const hasMore = items.length > startIndex + limitCount;
+
     // Strip internal moderation fields & project strictly public widget fields
-    const publicGroups = items.slice(0, limitCount).map((g) => ({
+    const publicGroups = pagedItems.map((g) => ({
       id: g.id,
       title: g.title,
       description: g.description.length > 140 ? `${g.description.slice(0, 137)}...` : g.description,
@@ -116,6 +124,9 @@ export async function GET(req: NextRequest) {
         success: true,
         source: 'Groupsor',
         website: 'https://www.groupsor.co.uk',
+        page,
+        limit: limitCount,
+        hasMore,
         count: publicGroups.length,
         groups: publicGroups,
       },

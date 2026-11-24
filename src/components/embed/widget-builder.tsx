@@ -41,11 +41,16 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
   const [title, setTitle] = useState('Latest WhatsApp Groups');
   const [keyword, setKeyword] = useState('');
   const [directJoin, setDirectJoin] = useState(false);
+  const [enableLoadMore, setEnableLoadMore] = useState(true);
+  const [maxHeight, setMaxHeight] = useState<'430px' | '550px' | 'none'>('430px');
 
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedApi, setCopiedApi] = useState(false);
   const [previewGroups, setPreviewGroups] = useState<PreviewGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   const apiQueryUrl = useMemo(() => {
     const params = new URLSearchParams();
@@ -78,28 +83,33 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
     attrs.push(`data-limit="${limit}"`);
     attrs.push(`data-theme="${theme}"`);
     if (layout !== 'list') attrs.push(`data-layout="${layout}"`);
+    if (maxHeight !== '430px') attrs.push(`data-max-height="${maxHeight}"`);
+    if (!enableLoadMore) attrs.push(`data-load-more="false"`);
     if (title.trim() && title.trim() !== 'Active WhatsApp Groups') {
       attrs.push(`data-title="${title.trim().replace(/"/g, '')}"`);
     }
     if (directJoin) attrs.push(`data-direct-join="true"`);
 
     return `<div ${attrs.join(' ')}></div>\n<script src="https://www.groupsor.co.uk/widget.js" async></script>`;
-  }, [category, country, groupType, keyword, limit, theme, layout, title, directJoin]);
+  }, [category, country, groupType, keyword, limit, theme, layout, maxHeight, enableLoadMore, title, directJoin]);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
-    fetch(relativeApiUrl)
+    setPage(1);
+    fetch(`${relativeApiUrl}&page=1`)
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) {
           setPreviewGroups(Array.isArray(data?.groups) ? data.groups : []);
+          setHasMore(Boolean(data?.hasMore));
           setIsLoading(false);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setPreviewGroups([]);
+          setHasMore(false);
           setIsLoading(false);
         }
       });
@@ -108,6 +118,24 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
       cancelled = true;
     };
   }, [relativeApiUrl]);
+
+  const handleLoadMorePreview = async () => {
+    if (isLoadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetch(`${relativeApiUrl}&page=${nextPage}`);
+      const data = await res.json();
+      const nextGroups: PreviewGroup[] = Array.isArray(data?.groups) ? data.groups : [];
+      setPreviewGroups((prev) => [...prev, ...nextGroups]);
+      setPage(nextPage);
+      setHasMore(Boolean(data?.hasMore));
+    } catch {
+      // Ignore transient error in preview
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const handleCopy = async (text: string, which: 'embed' | 'api') => {
     try {
@@ -273,6 +301,32 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label>Widget Scroll Height</Label>
+            <Select value={maxHeight} onValueChange={(v) => setMaxHeight(v as '430px' | '550px' | 'none')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="430px">Compact Scrollable (430px)</SelectItem>
+                <SelectItem value="550px">Tall Scrollable (550px)</SelectItem>
+                <SelectItem value="none">No Scroll Limit (Full Height)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/40">
+            <div className="space-y-0.5 pr-3">
+              <Label htmlFor="enable-load-more" className="text-sm font-medium">
+                Show Load More Button
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Lets visitors load the next batch of groups inside the widget.
+              </p>
+            </div>
+            <Switch id="enable-load-more" checked={enableLoadMore} onCheckedChange={setEnableLoadMore} />
+          </div>
+
           <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/40">
             <div className="space-y-0.5 pr-3">
               <Label htmlFor="direct-join" className="text-sm font-medium">
@@ -329,8 +383,9 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
                 </a>
               </div>
 
-              {/* Body */}
+              {/* Scrollable Body */}
               <div
+                style={maxHeight !== 'none' ? { maxHeight, overflowY: 'auto' } : undefined}
                 className={`p-3 ${
                   layout === 'grid'
                     ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5'
@@ -398,6 +453,28 @@ export function WidgetBuilder({ categories, countries }: WidgetBuilderProps) {
                   ))
                 )}
               </div>
+
+              {/* Load More Bar */}
+              {enableLoadMore && hasMore && (
+                <div
+                  className={`px-3 py-2 border-t ${
+                    previewIsDark ? 'border-[#374151] bg-[#111827]' : 'border-[#e5e7eb] bg-white'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    disabled={isLoadingMore}
+                    onClick={handleLoadMorePreview}
+                    className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold transition-colors disabled:opacity-60 ${
+                      previewIsDark
+                        ? 'bg-[#1f2937] border-[#374151] text-[#f9fafb] hover:border-[#25D366]'
+                        : 'bg-[#f9fafb] border-[#e5e7eb] text-[#111827] hover:border-[#25D366] hover:text-[#128C7E]'
+                    }`}
+                  >
+                    {isLoadingMore ? 'Loading more...' : `Load More (${limit} more)`}
+                  </button>
+                </div>
+              )}
 
               {/* Footer Backlink */}
               <div
