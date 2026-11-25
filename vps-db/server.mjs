@@ -7,11 +7,25 @@ import {
   generateId,
   mapRowToGroup,
 } from './db.mjs';
+import {
+  normalizeAllTaxonomiesAndGroups,
+  resolveCategoryMatch,
+  resolveCountryMatch,
+} from './category-utils.mjs';
 
 const PORT = Math.max(1, Number(process.env.PORT || 4000));
 const HOST = process.env.HOST || '127.0.0.1';
 const VPS_DB_SECRET = (process.env.VPS_DB_SECRET || '').trim();
 const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+
+try {
+  const startupSync = normalizeAllTaxonomiesAndGroups(db);
+  if (startupSync.mergedCategories > 0 || startupSync.mergedCountries > 0 || startupSync.updatedGroups > 0) {
+    console.log('[groupsor-vps-db] Auto-merged taxonomies on boot:', JSON.stringify(startupSync));
+  }
+} catch (err) {
+  console.warn('[groupsor-vps-db] Startup taxonomy normalization skipped:', err?.message || err);
+}
 
 function sendJson(res, status, data, extraHeaders = {}) {
   const payload = JSON.stringify(data);
@@ -123,7 +137,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'OPTIONS') {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-vps-db-secret',
       });
       res.end();
@@ -150,15 +164,18 @@ const server = http.createServer(async (req, res) => {
     if (method === 'POST' && pathname === '/categories') {
       if (!isAuthorized(req)) return sendJson(res, 401, { success: false, message: 'Unauthorized' });
       const body = await readJsonBody(req);
-      const value = sanitizeSlug(body.value || body.label);
-      const label = String(body.label || body.value || '').trim().slice(0, 80);
-      if (!value || value.length < 2 || !label || label.length < 2) {
+      const rawValue = String(body.value || body.label || '').trim();
+      const rawLabel = String(body.label || body.value || '').trim();
+      if (!rawValue || rawValue.length < 2 || !rawLabel || rawLabel.length < 2) {
         return sendJson(res, 400, { success: false, message: 'Valid value and label required.' });
       }
+      const resolved = body.exact
+        ? { value: sanitizeSlug(rawValue), label: rawLabel.slice(0, 80) }
+        : resolveCategoryMatch(rawLabel || rawValue, getAllCategories());
       db.prepare(
         'INSERT INTO categories (value, label) VALUES (?, ?) ON CONFLICT(value) DO UPDATE SET label = excluded.label'
-      ).run(value, label);
-      return sendJson(res, 200, { success: true, category: { id: value, label, value } });
+      ).run(resolved.value, resolved.label);
+      return sendJson(res, 200, { success: true, category: { id: resolved.value, label: resolved.label, value: resolved.value } });
     }
 
     if (method === 'DELETE' && pathname.startsWith('/categories/')) {
@@ -178,15 +195,18 @@ const server = http.createServer(async (req, res) => {
     if (method === 'POST' && pathname === '/countries') {
       if (!isAuthorized(req)) return sendJson(res, 401, { success: false, message: 'Unauthorized' });
       const body = await readJsonBody(req);
-      const value = sanitizeSlug(body.value || body.label);
-      const label = String(body.label || body.value || '').trim().slice(0, 80);
-      if (!value || value.length < 2 || !label || label.length < 2) {
+      const rawValue = String(body.value || body.label || '').trim();
+      const rawLabel = String(body.label || body.value || '').trim();
+      if (!rawValue || rawValue.length < 2 || !rawLabel || rawLabel.length < 2) {
         return sendJson(res, 400, { success: false, message: 'Valid value and label required.' });
       }
+      const resolved = body.exact
+        ? { value: sanitizeSlug(rawValue), label: rawLabel.slice(0, 80) }
+        : resolveCountryMatch(rawLabel || rawValue, getAllCountries());
       db.prepare(
         'INSERT INTO countries (value, label) VALUES (?, ?) ON CONFLICT(value) DO UPDATE SET label = excluded.label'
-      ).run(value, label);
-      return sendJson(res, 200, { success: true, country: { id: value, label, value } });
+      ).run(resolved.value, resolved.label);
+      return sendJson(res, 200, { success: true, country: { id: resolved.value, label: resolved.label, value: resolved.value } });
     }
 
     if (method === 'DELETE' && pathname.startsWith('/countries/')) {
@@ -197,6 +217,17 @@ const server = http.createServer(async (req, res) => {
       }
       db.prepare('DELETE FROM countries WHERE value = ?').run(value);
       return sendJson(res, 200, { success: true });
+    }
+
+    if (method === 'POST' && pathname === '/taxonomies/normalize') {
+      if (!isAuthorized(req)) return sendJson(res, 401, { success: false, message: 'Unauthorized' });
+      const summary = normalizeAllTaxonomiesAndGroups(db);
+      return sendJson(res, 200, {
+        success: true,
+        ...summary,
+        categories: getAllCategories(),
+        countries: getAllCountries(),
+      });
     }
 
     // 3. Groups lookup by link
@@ -395,8 +426,17 @@ const server = http.createServer(async (req, res) => {
       const nowIso = new Date().toISOString();
       const createdAt = body.createdAt ? toIsoOrNow(body.createdAt) : nowIso;
       const lastSubmittedAt = body.lastSubmittedAt ? toIsoOrNow(body.lastSubmittedAt) : nowIso;
-      const category = sanitizeSlug(body.category) || 'community';
-      const country = sanitizeSlug(body.country) || 'other';
+      const resolvedCat = resolveCategoryMatch(body.category || 'community', getAllCategories());
+      const resolvedCountry = resolveCountryMatch(body.country || 'other', getAllCountries());
+      db.prepare(
+        'INSERT OR IGNORE INTO categories (value, label) VALUES (?, ?)'
+      ).run(resolvedCat.value, resolvedCat.label);
+      db.prepare(
+        'INSERT OR IGNORE INTO countries (value, label) VALUES (?, ?)'
+      ).run(resolvedCountry.value, resolvedCountry.label);
+
+      const category = resolvedCat.value;
+      const country = resolvedCountry.value;
       const language = sanitizeSlug(body.language) || 'en';
       const type = ['group', 'channel', 'community'].includes(body.type) ? body.type : 'group';
       const tagsJson = JSON.stringify(
@@ -571,8 +611,14 @@ const server = http.createServer(async (req, res) => {
         const nextLink = body.link !== undefined ? String(body.link).trim() : existing.link;
         const nextImageUrl = body.imageUrl !== undefined ? String(body.imageUrl) : existing.image_url;
         const nextImageHint = body.imageHint !== undefined ? String(body.imageHint) : existing.image_hint;
-        const nextCategory = body.category !== undefined ? sanitizeSlug(body.category) || existing.category : existing.category;
-        const nextCountry = body.country !== undefined ? sanitizeSlug(body.country) || existing.country : existing.country;
+        const nextCategory =
+          body.category !== undefined
+            ? resolveCategoryMatch(body.category, getAllCategories()).value
+            : existing.category;
+        const nextCountry =
+          body.country !== undefined
+            ? resolveCountryMatch(body.country, getAllCountries()).value
+            : existing.country;
         const nextLanguage = body.language !== undefined ? sanitizeSlug(body.language) || existing.language : existing.language;
         const nextType = body.type !== undefined && ['group', 'channel', 'community'].includes(body.type) ? body.type : existing.type;
         const nextTags =
@@ -728,6 +774,34 @@ const server = http.createServer(async (req, res) => {
       const del = db.prepare('DELETE FROM push_subscriptions WHERE token = ?');
       for (const tok of tokens) del.run(tok.trim());
       return sendJson(res, 200, { success: true, pruned: tokens.length });
+    }
+
+    // 11. Site Settings Backup / Store (moderation, ads, layout)
+    const settingMatch = pathname.match(/^\/settings\/(moderation|ads|layout)$/);
+    if (settingMatch) {
+      const settingKey = settingMatch[1];
+      if (method === 'GET') {
+        if (!isAuthorized(req)) return sendJson(res, 401, { success: false, message: 'Unauthorized' });
+        const row = db.prepare('SELECT data, updated_at FROM settings WHERE key = ? LIMIT 1').get(settingKey);
+        if (!row) return sendJson(res, 200, { success: true, data: null });
+        let parsed = null;
+        try {
+          parsed = JSON.parse(row.data);
+        } catch {
+          parsed = null;
+        }
+        return sendJson(res, 200, { success: true, data: parsed, updatedAt: row.updated_at });
+      }
+      if (method === 'PUT' || method === 'POST') {
+        if (!isAuthorized(req)) return sendJson(res, 401, { success: false, message: 'Unauthorized' });
+        const body = await readJsonBody(req);
+        const payload = body?.data !== undefined ? body.data : body;
+        const updatedAt = new Date().toISOString();
+        db.prepare(
+          'INSERT INTO settings (key, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at'
+        ).run(settingKey, JSON.stringify(payload || {}), updatedAt);
+        return sendJson(res, 200, { success: true, updatedAt });
+      }
     }
 
     return sendJson(res, 404, { success: false, message: 'Not Found' });

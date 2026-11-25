@@ -1,30 +1,17 @@
 'use server';
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
 import { revalidatePath } from 'next/cache';
 import { AdSettings, DEFAULT_AD_SETTINGS, DEFAULT_AD_SLOTS } from './ad-types';
 import { getCachedValue, invalidateCachedKey } from '@/lib/settings-cache';
-
-function getFirestoreInstance() {
-  if (!getApps().length) {
-    initializeApp(firebaseConfig);
-  }
-  return getFirestore(getApp());
-}
+import { readSiteSetting, writeSiteSetting } from '@/lib/firebase-settings-store';
 
 export async function getAdSettings(): Promise<AdSettings> {
   return getCachedValue<AdSettings>(
     'settings:ads',
     async () => {
-      const db = getFirestoreInstance();
-      const docRef = doc(db, 'settings', 'ads');
-      const docSnap = await getDoc(docRef);
+      const data = (await readSiteSetting('ads')) as Partial<AdSettings> | null;
 
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Partial<AdSettings>;
+      if (data) {
         const mergedSlots = { ...DEFAULT_AD_SLOTS };
         if (data.slots) {
           Object.keys(DEFAULT_AD_SLOTS).forEach((key) => {
@@ -52,10 +39,7 @@ export async function saveAdSettings(
   adSettings: AdSettings
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const db = getFirestoreInstance();
-    const docRef = doc(db, 'settings', 'ads');
-
-    await setDoc(docRef, adSettings, { merge: true });
+    await writeSiteSetting('ads', adSettings as unknown as Record<string, unknown>);
     invalidateCachedKey('settings:ads');
 
     revalidatePath('/', 'layout');

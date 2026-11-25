@@ -5,11 +5,11 @@ import type { Category, Country } from '@/lib/data';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { MoreVertical, PlusCircle, Trash, Edit } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash, Edit, Sparkles, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { AdminTaxonomyDialog } from './admin-taxonomy-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteTaxonomyItem } from '@/app/admin/actions';
+import { autoMergeTaxonomies, deleteTaxonomyItem } from '@/app/admin/actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,8 +49,22 @@ export function AdminTaxonomyManager({
 }: AdminTaxonomyManagerProps) {
     const { toast } = useToast();
     const [isDeleting, startDeleteTransition] = useTransition();
+    const [isMerging, startMergeTransition] = useTransition();
     const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: 'category', itemToEdit: null });
     const [deleteDialogState, setDeleteDialogState] = useState<DeleteDialogState>({ isOpen: false, type: 'category', itemToDelete: null });
+
+    const handleAutoMerge = () => {
+        startMergeTransition(async () => {
+            const result = await autoMergeTaxonomies();
+            if (result.success) {
+                if (result.categories) onUpdateCategories(result.categories);
+                if (result.countries) onUpdateCountries(result.countries);
+                toast({ title: 'Taxonomies Synced & Merged', description: result.message });
+            } else {
+                toast({ title: 'Error', description: result.message, variant: 'destructive' });
+            }
+        });
+    };
 
     const handleAddNew = (type: 'category' | 'country') => {
         setDialogState({ isOpen: true, type, itemToEdit: null });
@@ -157,9 +171,25 @@ export function AdminTaxonomyManager({
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Taxonomy</CardTitle>
-                <CardDescription>Manage group categories and countries.</CardDescription>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <CardTitle>Taxonomy</CardTitle>
+                    <CardDescription>Manage &amp; auto-merge duplicate group categories and countries.</CardDescription>
+                </div>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAutoMerge}
+                    disabled={isMerging}
+                    className="shrink-0"
+                >
+                    {isMerging ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                        <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                    )}
+                    {isMerging ? 'Merging...' : 'Auto-Merge Duplicates'}
+                </Button>
             </CardHeader>
             <CardContent className="space-y-6">
                 {renderTable('category', initialCategories)}

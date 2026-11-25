@@ -14,7 +14,7 @@ export function isVpsDbEnabled(): boolean {
 async function vpsRequest<T>(
   path: string,
   options: {
-    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     requireAuth?: boolean;
     timeoutMs?: number;
@@ -212,10 +212,14 @@ export async function vpsGetCategories(): Promise<Category[]> {
   return Array.isArray(data.categories) ? data.categories : [];
 }
 
-export async function vpsSaveCategory(value: string, label: string): Promise<Category> {
+export async function vpsSaveCategory(
+  value: string,
+  label: string,
+  exact = false
+): Promise<Category> {
   const data = await vpsRequest<{ category: Category }>('/categories', {
     method: 'POST',
-    body: { value, label },
+    body: { value, label, exact },
     requireAuth: true,
   });
   return data.category;
@@ -233,10 +237,14 @@ export async function vpsGetCountries(): Promise<Country[]> {
   return Array.isArray(data.countries) ? data.countries : [];
 }
 
-export async function vpsSaveCountry(value: string, label: string): Promise<Country> {
+export async function vpsSaveCountry(
+  value: string,
+  label: string,
+  exact = false
+): Promise<Country> {
   const data = await vpsRequest<{ country: Country }>('/countries', {
     method: 'POST',
-    body: { value, label },
+    body: { value, label, exact },
     requireAuth: true,
   });
   return data.country;
@@ -247,6 +255,50 @@ export async function vpsDeleteCountry(value: string): Promise<void> {
     method: 'DELETE',
     requireAuth: true,
   });
+}
+
+export async function vpsNormalizeTaxonomies(): Promise<{
+  mergedCategories: number;
+  mergedCountries: number;
+  updatedGroups: number;
+  categories: Category[];
+  countries: Country[];
+}> {
+  return vpsRequest('/taxonomies/normalize', {
+    method: 'POST',
+    body: {},
+    requireAuth: true,
+    timeoutMs: 15000,
+  });
+}
+
+export async function vpsGetSetting<T = Record<string, unknown>>(
+  key: 'moderation' | 'ads' | 'layout'
+): Promise<T | null> {
+  try {
+    const data = await vpsRequest<{ data?: T | null }>(`/settings/${key}`, {
+      requireAuth: true,
+    });
+    return data.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function vpsSaveSetting(
+  key: 'moderation' | 'ads' | 'layout',
+  data: Record<string, unknown>
+): Promise<boolean> {
+  try {
+    await vpsRequest(`/settings/${key}`, {
+      method: 'PUT',
+      body: { data },
+      requireAuth: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function vpsGetReports(): Promise<Report[]> {

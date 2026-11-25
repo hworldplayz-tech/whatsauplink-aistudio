@@ -32,74 +32,13 @@ export function loadLocalEnv() {
 
 loadLocalEnv();
 
-export const DEFAULT_CATEGORIES = [
-  { label: 'Adult 18+', value: 'adult-18' },
-  { label: 'Art & Photography', value: 'art-photography' },
-  { label: 'Business, Advertising & Marketing', value: 'business-advertising-marketing' },
-  { label: 'Comedy & Funny', value: 'comedy-funny' },
-  { label: 'Community', value: 'community' },
-  { label: 'Crypto & Trading', value: 'crypto-trading' },
-  { label: 'Education', value: 'education' },
-  { label: 'Entertainment', value: 'entertainment' },
-  { label: 'Family & Relationships', value: 'family-relationships' },
-  { label: 'Fan Clubs', value: 'fan-clubs' },
-  { label: 'Fashion, Style & Clothing', value: 'fashion-style-clothing' },
-  { label: 'Food & Cooking', value: 'food-cooking' },
-  { label: 'Gaming', value: 'gaming' },
-  { label: 'Health & Fitness', value: 'health-fitness' },
-  { label: 'Jobs & Career', value: 'jobs-career' },
-  { label: 'Money & Earning', value: 'money-earning' },
-  { label: 'Movies & TV', value: 'movies-tv' },
-  { label: 'Music', value: 'music' },
-  { label: 'News & Politics', value: 'news-politics' },
-  { label: 'Quotes & Shayari', value: 'quotes-shayari' },
-  { label: 'Shopping, Buy & Sell', value: 'shopping-buy-sell' },
-  { label: 'Social, Friendship & Community', value: 'social-friendship-community' },
-  { label: 'Sports & Games', value: 'sports-games' },
-  { label: 'Status & Video', value: 'status-video' },
-  { label: 'Technology', value: 'technology' },
-  { label: 'Travel', value: 'travel' },
-];
+import {
+  DEFAULT_CATEGORIES as CANONICAL_CATEGORIES,
+  DEFAULT_COUNTRIES as CANONICAL_COUNTRIES,
+} from './category-utils.mjs';
 
-export const DEFAULT_COUNTRIES = [
-  { label: 'International', value: 'intl' },
-  { label: 'India', value: 'in' },
-  { label: 'Pakistan', value: 'pk' },
-  { label: 'United States', value: 'us' },
-  { label: 'United Kingdom', value: 'uk' },
-  { label: 'Canada', value: 'ca' },
-  { label: 'Australia', value: 'au' },
-  { label: 'United Arab Emirates', value: 'ae' },
-  { label: 'Saudi Arabia', value: 'sa' },
-  { label: 'Qatar', value: 'qa' },
-  { label: 'Kuwait', value: 'kw' },
-  { label: 'Oman', value: 'om' },
-  { label: 'Bahrain', value: 'bh' },
-  { label: 'Bangladesh', value: 'bd' },
-  { label: 'Nepal', value: 'np' },
-  { label: 'Sri Lanka', value: 'lk' },
-  { label: 'Indonesia', value: 'id' },
-  { label: 'Malaysia', value: 'my' },
-  { label: 'Philippines', value: 'ph' },
-  { label: 'Singapore', value: 'sg' },
-  { label: 'Nigeria', value: 'ng' },
-  { label: 'South Africa', value: 'za' },
-  { label: 'Kenya', value: 'ke' },
-  { label: 'Ghana', value: 'gh' },
-  { label: 'Egypt', value: 'eg' },
-  { label: 'Morocco', value: 'ma' },
-  { label: 'Germany', value: 'de' },
-  { label: 'France', value: 'fr' },
-  { label: 'Italy', value: 'it' },
-  { label: 'Spain', value: 'es' },
-  { label: 'Netherlands', value: 'nl' },
-  { label: 'Brazil', value: 'br' },
-  { label: 'Mexico', value: 'mx' },
-  { label: 'Argentina', value: 'ar' },
-  { label: 'Turkey', value: 'tr' },
-  { label: 'Russia', value: 'ru' },
-  { label: 'Other Countries', value: 'other' },
-];
+export const DEFAULT_CATEGORIES = CANONICAL_CATEGORIES;
+export const DEFAULT_COUNTRIES = CANONICAL_COUNTRIES;
 
 function openSqlite(dbPath) {
   const absPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(__dirname, dbPath);
@@ -198,6 +137,12 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (
     id TEXT PRIMARY KEY,
     token TEXT NOT NULL UNIQUE,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
 `);

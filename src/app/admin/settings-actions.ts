@@ -3,20 +3,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { doc, updateDoc, setDoc } from 'firebase/firestore';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
 import { invalidateCachedKey } from '@/lib/settings-cache';
-
-// Helper function to initialize Firebase on the server
-function getFirestoreInstance() {
-    if (!getApps().length) {
-        initializeApp(firebaseConfig);
-    }
-    return getFirestore(getApp());
-}
-
+import { writeSiteSetting } from '@/lib/firebase-settings-store';
 
 const moderationSettingsSchema = z.object({
     cooldownEnabled: z.enum(['on', 'off']).transform(val => val === 'on'),
@@ -62,10 +50,7 @@ export async function saveModerationSettings(formData: FormData): Promise<{ succ
     }
 
     try {
-        const db = getFirestoreInstance();
-        const settingsDocRef = doc(db, 'settings', 'moderation');
-        // Use setDoc with merge to ensure the document is created if it doesn't exist
-        await setDoc(settingsDocRef, validatedFields.data, { merge: true });
+        await writeSiteSetting('moderation', validatedFields.data as Record<string, unknown>);
         invalidateCachedKey('settings:moderation');
 
         revalidatePath('/admin');

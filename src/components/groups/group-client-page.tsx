@@ -9,6 +9,7 @@ import { AdSlot } from '@/components/ads/ad-slot';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { RotateCcw } from 'lucide-react';
+import { resolveCategoryMatch, resolveCountryMatch } from '@/lib/taxonomy-normalizer';
 
 type GroupClientPageProps = {
     allGroups: GroupLink[];
@@ -151,8 +152,14 @@ export function GroupClientPage({
         group.country.toLowerCase().includes(searchLower) ||
         group.tags?.some(tag => tag.toLowerCase().includes(searchLower));
 
-      const countryMatch = selectedCountry === 'all' || group.country === selectedCountry;
-      const categoryMatch = selectedCategory === 'all' || group.category.toLowerCase() === selectedCategory.toLowerCase();
+      const countryMatch =
+        selectedCountry === 'all' ||
+        group.country.toLowerCase() === selectedCountry.toLowerCase() ||
+        resolveCountryMatch(group.country).value === resolveCountryMatch(selectedCountry).value;
+      const categoryMatch =
+        selectedCategory === 'all' ||
+        group.category.toLowerCase() === selectedCategory.toLowerCase() ||
+        resolveCategoryMatch(group.category).value === resolveCategoryMatch(selectedCategory).value;
       const typeMatch = selectedType === 'all' || (group.type || 'group') === selectedType;
       const languageMatch = selectedLanguage === 'all' || (group.language || 'en') === selectedLanguage;
 

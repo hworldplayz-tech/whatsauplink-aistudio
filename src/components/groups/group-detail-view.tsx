@@ -54,8 +54,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SharePopover } from './share-popover';
 import { useEffect, useState, useTransition, useMemo } from 'react';
-import { useFirestore } from '@/firebase/provider';
-import { doc, increment, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { GroupReportDialog } from './group-report-dialog';
 import { StarRating } from './star-rating';
@@ -86,7 +84,6 @@ export function GroupDetailView({
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [initialReportReason, setInitialReportReason] = useState<string>('');
   const [settings, setSettings] = useState<ModerationSettings | null>(initialSettings || null);
-  const { firestore } = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const [isRating, startRatingTransition] = useTransition();

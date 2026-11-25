@@ -49,11 +49,13 @@ import {
   vpsGetGroupById,
   vpsGetGroups,
   vpsGetReports,
+  vpsNormalizeTaxonomies,
   vpsSaveCategory,
   vpsSaveCountry,
   vpsUpdateGroup,
 } from '@/lib/vps-db';
 import { getCachedValue, invalidateCachedKey } from '@/lib/settings-cache';
+import { readSiteSetting, writeSiteSetting } from '@/lib/firebase-settings-store';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -184,9 +186,7 @@ export async function toggleShowClicks(
   show: boolean
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const db = getFirestoreInstance();
-    const settingsDocRef = doc(db, 'settings', 'moderation');
-    await setDoc(settingsDocRef, { showClicks: show }, { merge: true });
+    await writeSiteSetting('moderation', { showClicks: show });
     invalidateCachedKey('settings:moderation');
 
     revalidatePath('/admin');
@@ -396,10 +396,10 @@ export async function saveTaxonomyItem(
         }
       }
       if (type === 'category') {
-        await vpsSaveCategory(value, label);
+        await vpsSaveCategory(value, label, isEditing);
         invalidateCachedKey('vps:categories');
       } else {
-        await vpsSaveCountry(value, label);
+        await vpsSaveCountry(value, label, isEditing);
         invalidateCachedKey('vps:countries');
       }
     } else {
@@ -472,6 +472,41 @@ export async function deleteTaxonomyItem(
   } catch (error) {
     console.error(`Error deleting ${type}:`, error);
     return { success: false, message: `Failed to delete ${type}.` };
+  }
+}
+
+export async function autoMergeTaxonomies(): Promise<{
+  success: boolean;
+  message: string;
+  categories?: Category[];
+  countries?: Country[];
+}> {
+  if (!isVpsDbEnabled()) {
+    return {
+      success: false,
+      message: 'VPS Database must be configured to run bulk auto-merge.',
+    };
+  }
+
+  try {
+    const result = await vpsNormalizeTaxonomies();
+    invalidateCachedKey('vps:categories');
+    invalidateCachedKey('vps:countries');
+    revalidatePath('/admin');
+    revalidatePath('/');
+
+    return {
+      success: true,
+      message: `Merged ${result.mergedCategories} duplicate categories & ${result.mergedCountries} countries (updated ${result.updatedGroups} groups).`,
+      categories: result.categories,
+      countries: result.countries,
+    };
+  } catch (error) {
+    console.error('Error normalizing taxonomies:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to normalize taxonomies.',
+    };
   }
 }
 
@@ -568,12 +603,9 @@ export async function getLayoutSettings(): Promise<LayoutSettings> {
   return getCachedValue<LayoutSettings>(
     'settings:layout',
     async () => {
-      const db = getFirestoreInstance();
-      const settingsDocRef = doc(db, 'settings', 'layout');
-      const docSnap = await getDoc(settingsDocRef);
+      const data = (await readSiteSetting('layout')) as Partial<LayoutSettings> | null;
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      if (data) {
         return {
           ...defaultLayoutSettings,
           ...data,
@@ -681,9 +713,7 @@ export async function saveLayoutSettings(
       },
     };
 
-    const db = getFirestoreInstance();
-    const settingsDocRef = doc(db, 'settings', 'layout');
-    await setDoc(settingsDocRef, settingsToSave, { merge: true });
+    await writeSiteSetting('layout', settingsToSave as Record<string, unknown>);
     invalidateCachedKey('settings:layout');
 
     revalidatePath('/', 'layout');

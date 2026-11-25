@@ -27,6 +27,7 @@ import { GROUP_TYPES, DEFAULT_LANGUAGES, SORT_OPTIONS } from '@/lib/constants';
 import type { Category, Country, GroupLink } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { getDisplayCategoryLabel, getDisplayCountryLabel } from '@/lib/taxonomy-normalizer';
 
 type GroupListControlsProps = {
   view: 'grid' | 'list';
@@ -275,7 +276,9 @@ export function GroupListControls({
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate text-foreground">{group.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{group.category} • {group.country.toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {getDisplayCategoryLabel(group.category)} • {getDisplayCountryLabel(group.country)}
+                            </p>
                           </div>
                           <Badge variant="outline" className="text-[10px] capitalize shrink-0">
                             {group.type}

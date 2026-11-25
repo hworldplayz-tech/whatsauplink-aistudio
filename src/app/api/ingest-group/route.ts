@@ -31,6 +31,11 @@ import {
   vpsSaveCountry,
 } from '@/lib/vps-db';
 import { invalidateCachedKey } from '@/lib/settings-cache';
+import {
+  resolveCategoryMatch,
+  resolveCountryMatch,
+  slugifyTaxonomy,
+} from '@/lib/taxonomy-normalizer';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -122,123 +127,8 @@ function isSafeHttpsImageUrl(url: string | undefined): string {
 }
 
 function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
+  return slugifyTaxonomy(input);
 }
-
-function toTitleLabel(input: string): string {
-  return input
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (ch) => ch.toUpperCase())
-    .slice(0, 48);
-}
-
-const CATEGORY_ALIASES: Record<string, { value: string; label: string }> = {
-  adult: { value: 'adult-18-plus', label: 'Adult/18+' },
-  'adult-18': { value: 'adult-18-plus', label: 'Adult/18+' },
-  '18-plus': { value: 'adult-18-plus', label: 'Adult/18+' },
-  'adult-and-18': { value: 'adult-18-plus', label: 'Adult/18+' },
-  'art-and-design': { value: 'art-design', label: 'Art & Design' },
-  art: { value: 'art-design', label: 'Art & Design' },
-  business: { value: 'business', label: 'Business' },
-  community: { value: 'community', label: 'Community' },
-  crypto: { value: 'crypto-trading', label: 'Crypto & Forex Trading' },
-  'crypto-trading': { value: 'crypto-trading', label: 'Crypto & Forex Trading' },
-  forex: { value: 'crypto-trading', label: 'Crypto & Forex Trading' },
-  dating: { value: 'dating-friendship', label: 'Friendship & Dating' },
-  friendship: { value: 'dating-friendship', label: 'Friendship & Dating' },
-  'chatting-dating': { value: 'dating-friendship', label: 'Friendship & Dating' },
-  'friendship-and-dating': { value: 'dating-friendship', label: 'Friendship & Dating' },
-  deals: { value: 'deals-discounts', label: 'Shopping Deals & Offers' },
-  shopping: { value: 'deals-discounts', label: 'Shopping Deals & Offers' },
-  'deals-and-offers': { value: 'deals-discounts', label: 'Shopping Deals & Offers' },
-  dramas: { value: 'dramas-series', label: 'Dramas & Series' },
-  education: { value: 'education', label: 'Education' },
-  'education-school': { value: 'education', label: 'Education' },
-  school: { value: 'education', label: 'Education' },
-  study: { value: 'education', label: 'Education' },
-  food: { value: 'food-cooking', label: 'Food & Cooking' },
-  cooking: { value: 'food-cooking', label: 'Food & Cooking' },
-  earning: { value: 'freelancing-earning', label: 'Online Earning & Freelance' },
-  'online-earning': { value: 'freelancing-earning', label: 'Online Earning & Freelance' },
-  freelance: { value: 'freelancing-earning', label: 'Online Earning & Freelance' },
-  freelancing: { value: 'freelancing-earning', label: 'Online Earning & Freelance' },
-  funny: { value: 'funny-memes', label: 'Funny Memes & Jokes' },
-  memes: { value: 'funny-memes', label: 'Funny Memes & Jokes' },
-  'funny-and-memes': { value: 'funny-memes', label: 'Funny Memes & Jokes' },
-  jokes: { value: 'funny-memes', label: 'Funny Memes & Jokes' },
-  gaming: { value: 'gaming', label: 'Gaming' },
-  games: { value: 'gaming', label: 'Gaming' },
-  health: { value: 'health-fitness', label: 'Health & Fitness' },
-  fitness: { value: 'health-fitness', label: 'Health & Fitness' },
-  jobs: { value: 'jobs-career', label: 'Jobs & Career' },
-  career: { value: 'jobs-career', label: 'Jobs & Career' },
-  'jobs-and-career': { value: 'jobs-career', label: 'Jobs & Career' },
-  lifestyle: { value: 'lifestyle', label: 'Lifestyle' },
-  movies: { value: 'movies-tv-shows', label: 'Movies & TV Shows' },
-  'movies-and-tv': { value: 'movies-tv-shows', label: 'Movies & TV Shows' },
-  music: { value: 'music-audio', label: 'Music & Audio' },
-  news: { value: 'news-media', label: 'News & Media' },
-  'news-and-media': { value: 'news-media', label: 'News & Media' },
-  politics: { value: 'politics', label: 'Politics' },
-  pubg: { value: 'pubg-gaming', label: 'PUBG & BGMI Gaming' },
-  bgmi: { value: 'pubg-gaming', label: 'PUBG & BGMI Gaming' },
-  'free-fire': { value: 'gaming', label: 'Gaming' },
-  science: { value: 'science', label: 'Science' },
-  stocks: { value: 'share-market', label: 'Stock Market & Trading' },
-  'share-market': { value: 'share-market', label: 'Stock Market & Trading' },
-  trading: { value: 'share-market', label: 'Stock Market & Trading' },
-  sports: { value: 'sports', label: 'Sports' },
-  cricket: { value: 'sports', label: 'Sports' },
-  status: { value: 'status-videos', label: 'WhatsApp Status & Reels' },
-  'status-videos': { value: 'status-videos', label: 'WhatsApp Status & Reels' },
-  reels: { value: 'status-videos', label: 'WhatsApp Status & Reels' },
-  tech: { value: 'technology', label: 'Technology' },
-  technology: { value: 'technology', label: 'Technology' },
-  travel: { value: 'travel-tourism', label: 'Travel & Tourism' },
-};
-
-const COUNTRY_NAME_TO_CODE: Record<string, { value: string; label: string }> = {
-  australia: { value: 'au', label: 'Australia' },
-  au: { value: 'au', label: 'Australia' },
-  bangladesh: { value: 'bd', label: 'Bangladesh' },
-  bd: { value: 'bd', label: 'Bangladesh' },
-  canada: { value: 'ca', label: 'Canada' },
-  ca: { value: 'ca', label: 'Canada' },
-  india: { value: 'in', label: 'India' },
-  in: { value: 'in', label: 'India' },
-  indonesia: { value: 'id', label: 'Indonesia' },
-  id: { value: 'id', label: 'Indonesia' },
-  malaysia: { value: 'my', label: 'Malaysia' },
-  my: { value: 'my', label: 'Malaysia' },
-  pakistan: { value: 'pk', label: 'Pakistan' },
-  pk: { value: 'pk', label: 'Pakistan' },
-  philippines: { value: 'ph', label: 'Philippines' },
-  ph: { value: 'ph', label: 'Philippines' },
-  singapore: { value: 'sg', label: 'Singapore' },
-  sg: { value: 'sg', label: 'Singapore' },
-  uae: { value: 'ae', label: 'UAE' },
-  ae: { value: 'ae', label: 'UAE' },
-  'united-arab-emirates': { value: 'ae', label: 'UAE' },
-  'united-kingdom': { value: 'gb', label: 'United Kingdom' },
-  uk: { value: 'gb', label: 'United Kingdom' },
-  gb: { value: 'gb', label: 'United Kingdom' },
-  'united-states': { value: 'us', label: 'United States' },
-  usa: { value: 'us', label: 'United States' },
-  us: { value: 'us', label: 'United States' },
-  international: { value: 'other', label: 'Other Countries' },
-  global: { value: 'other', label: 'Other Countries' },
-  worldwide: { value: 'other', label: 'Other Countries' },
-  any: { value: 'other', label: 'Other Countries' },
-  other: { value: 'other', label: 'Other Countries' },
-};
 
 const LANGUAGE_ALIASES: Record<string, string> = {
   english: 'en',
@@ -308,22 +198,9 @@ async function ensureCategoryExists(
   db: ReturnType<typeof getFirestoreInstance>,
   rawCategory: string
 ): Promise<{ value: string; label: string; created: boolean }> {
-  const rawSlug = slugify(rawCategory) || 'other';
-  const alias = CATEGORY_ALIASES[rawSlug];
-  const defaultMatch = DEFAULT_CATEGORIES.find(
-    (c) => c.value === rawSlug || slugify(c.label) === rawSlug
-  );
-
-  const resolvedValue = alias?.value || defaultMatch?.value || rawSlug;
-  const resolvedLabel =
-    alias?.label ||
-    defaultMatch?.label ||
-    (rawCategory.trim().length >= 2 ? rawCategory.trim().slice(0, 48) : toTitleLabel(resolvedValue));
-
   const catCollection = collection(db, 'categories');
-  const existingSnapshot = await getDocs(query(catCollection, limit(1)));
+  const existingSnapshot = await getDocs(catCollection);
 
-  // If categories collection is empty in Firestore, seed defaults first so the dropdown never shrinks
   if (existingSnapshot.empty) {
     const batch = writeBatch(db);
     DEFAULT_CATEGORIES.forEach((cat) => {
@@ -332,17 +209,23 @@ async function ensureCategoryExists(
     await batch.commit();
   }
 
-  const targetRef = doc(db, 'categories', resolvedValue);
+  const existingList = existingSnapshot.docs.map((d) => ({
+    value: String(d.data()?.value || d.id),
+    label: String(d.data()?.label || d.id),
+  }));
+
+  const resolved = resolveCategoryMatch(rawCategory, existingList);
+  const targetRef = doc(db, 'categories', resolved.value);
   const targetSnap = await getDoc(targetRef);
   if (!targetSnap.exists()) {
-    await setDoc(targetRef, { label: resolvedLabel, value: resolvedValue });
-    return { value: resolvedValue, label: resolvedLabel, created: true };
+    await setDoc(targetRef, { label: resolved.label, value: resolved.value });
+    return { value: resolved.value, label: resolved.label, created: true };
   }
 
   const data = targetSnap.data();
   return {
-    value: resolvedValue,
-    label: (data?.label as string) || resolvedLabel,
+    value: resolved.value,
+    label: (data?.label as string) || resolved.label,
     created: false,
   };
 }
@@ -351,20 +234,8 @@ async function ensureCountryExists(
   db: ReturnType<typeof getFirestoreInstance>,
   rawCountry: string
 ): Promise<{ value: string; label: string; created: boolean }> {
-  const rawSlug = slugify(rawCountry) || 'other';
-  const alias = COUNTRY_NAME_TO_CODE[rawSlug];
-  const defaultMatch = DEFAULT_COUNTRIES.find(
-    (c) => c.value === rawSlug || slugify(c.label) === rawSlug
-  );
-
-  const resolvedValue = alias?.value || defaultMatch?.value || rawSlug;
-  const resolvedLabel =
-    alias?.label ||
-    defaultMatch?.label ||
-    (rawCountry.trim().length >= 2 ? rawCountry.trim().slice(0, 48) : toTitleLabel(resolvedValue));
-
   const countryCollection = collection(db, 'countries');
-  const existingSnapshot = await getDocs(query(countryCollection, limit(1)));
+  const existingSnapshot = await getDocs(countryCollection);
 
   if (existingSnapshot.empty) {
     const batch = writeBatch(db);
@@ -374,17 +245,23 @@ async function ensureCountryExists(
     await batch.commit();
   }
 
-  const targetRef = doc(db, 'countries', resolvedValue);
+  const existingList = existingSnapshot.docs.map((d) => ({
+    value: String(d.data()?.value || d.id),
+    label: String(d.data()?.label || d.id),
+  }));
+
+  const resolved = resolveCountryMatch(rawCountry, existingList);
+  const targetRef = doc(db, 'countries', resolved.value);
   const targetSnap = await getDoc(targetRef);
   if (!targetSnap.exists()) {
-    await setDoc(targetRef, { label: resolvedLabel, value: resolvedValue });
-    return { value: resolvedValue, label: resolvedLabel, created: true };
+    await setDoc(targetRef, { label: resolved.label, value: resolved.value });
+    return { value: resolved.value, label: resolved.label, created: true };
   }
 
   const data = targetSnap.data();
   return {
-    value: resolvedValue,
-    label: (data?.label as string) || resolvedLabel,
+    value: resolved.value,
+    label: (data?.label as string) || resolved.label,
     created: false,
   };
 }
@@ -539,48 +416,34 @@ export async function POST(req: NextRequest) {
     let countryResult: { value: string; label: string; created: boolean };
 
     if (useVpsDb) {
-      const rawCatInput = input.category || 'community';
-      const rawCatSlug = slugify(rawCatInput) || 'other';
-      const catAlias = CATEGORY_ALIASES[rawCatSlug];
-      const catDefault = DEFAULT_CATEGORIES.find(
-        (c) => c.value === rawCatSlug || slugify(c.label) === rawCatSlug
-      );
-      const resolvedCatValue = catAlias?.value || catDefault?.value || rawCatSlug;
-      const resolvedCatLabel =
-        catAlias?.label ||
-        catDefault?.label ||
-        (rawCatInput.trim().length >= 2 ? rawCatInput.trim().slice(0, 48) : toTitleLabel(resolvedCatValue));
-
       const existingCats = await vpsGetCategories();
-      const existingCat = existingCats.find((c) => c.value === resolvedCatValue);
+      const resolvedCat = resolveCategoryMatch(input.category || 'community', existingCats);
+      const existingCat = existingCats.find((c) => c.value === resolvedCat.value);
       if (!existingCat) {
-        await vpsSaveCategory(resolvedCatValue, resolvedCatLabel);
+        await vpsSaveCategory(resolvedCat.value, resolvedCat.label);
         invalidateCachedKey('vps:categories');
-        categoryResult = { value: resolvedCatValue, label: resolvedCatLabel, created: true };
+        categoryResult = { value: resolvedCat.value, label: resolvedCat.label, created: true };
       } else {
-        categoryResult = { value: resolvedCatValue, label: existingCat.label || resolvedCatLabel, created: false };
+        categoryResult = {
+          value: resolvedCat.value,
+          label: existingCat.label || resolvedCat.label,
+          created: false,
+        };
       }
 
-      const rawCountryInput = input.country || 'other';
-      const rawCountrySlug = slugify(rawCountryInput) || 'other';
-      const countryAlias = COUNTRY_NAME_TO_CODE[rawCountrySlug];
-      const countryDefault = DEFAULT_COUNTRIES.find(
-        (c) => c.value === rawCountrySlug || slugify(c.label) === rawCountrySlug
-      );
-      const resolvedCountryValue = countryAlias?.value || countryDefault?.value || rawCountrySlug;
-      const resolvedCountryLabel =
-        countryAlias?.label ||
-        countryDefault?.label ||
-        (rawCountryInput.trim().length >= 2 ? rawCountryInput.trim().slice(0, 48) : toTitleLabel(resolvedCountryValue));
-
       const existingCountries = await vpsGetCountries();
-      const existingCountry = existingCountries.find((c) => c.value === resolvedCountryValue);
+      const resolvedCountry = resolveCountryMatch(input.country || 'other', existingCountries);
+      const existingCountry = existingCountries.find((c) => c.value === resolvedCountry.value);
       if (!existingCountry) {
-        await vpsSaveCountry(resolvedCountryValue, resolvedCountryLabel);
+        await vpsSaveCountry(resolvedCountry.value, resolvedCountry.label);
         invalidateCachedKey('vps:countries');
-        countryResult = { value: resolvedCountryValue, label: resolvedCountryLabel, created: true };
+        countryResult = { value: resolvedCountry.value, label: resolvedCountry.label, created: true };
       } else {
-        countryResult = { value: resolvedCountryValue, label: existingCountry.label || resolvedCountryLabel, created: false };
+        countryResult = {
+          value: resolvedCountry.value,
+          label: existingCountry.label || resolvedCountry.label,
+          created: false,
+        };
       }
     } else {
       const db = getFirestoreInstance();

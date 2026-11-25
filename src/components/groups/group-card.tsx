@@ -30,6 +30,7 @@ import { GroupQrDialog } from './group-qr-dialog';
 import { getWhatsAppShareUrl } from '@/lib/whatsapp-intent';
 import NProgress from 'nprogress';
 import { StarRating } from './star-rating';
+import { getDisplayCategoryLabel, getDisplayCountryLabel } from '@/lib/taxonomy-normalizer';
 
 type GroupCardProps = {
   group: GroupLink;
@@ -96,8 +97,12 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
         onTouchStart={handlePrefetch}
       >
         <Link href={detailUrl} prefetch={true} className="block absolute inset-0 z-0" onClick={handleCardClick} />
-        <Badge className="absolute top-2 left-2 text-xs capitalize bg-primary text-primary-foreground hover:bg-primary/80 z-10">{group.country}</Badge>
-        <Badge className="absolute top-2 right-2 text-xs bg-accent text-accent-foreground hover:bg-accent/80 z-10">{group.category}</Badge>
+        <Badge className="absolute top-2 left-2 text-xs bg-primary text-primary-foreground hover:bg-primary/80 z-10 max-w-[44%] truncate">
+          {getDisplayCountryLabel(group.country)}
+        </Badge>
+        <Badge className="absolute top-2 right-2 text-xs bg-accent text-accent-foreground hover:bg-accent/80 z-10 max-w-[46%] truncate">
+          {getDisplayCategoryLabel(group.category)}
+        </Badge>
         <Avatar className="h-24 w-24 text-primary border-2 border-primary/20">
             <AvatarImage src={group.imageUrl} alt={`Preview for ${group.title}`} />
             <AvatarFallback>
@@ -254,7 +259,7 @@ export function GroupCard({ group, view, onTagClick, showClicks, showRatings }: 
                         <span className="text-xs text-muted-foreground">({group.ratingCount ?? 0})</span>
                     </div>
                 )}
-                <Badge variant="secondary" className="whitespace-nowrap">{group.category}</Badge>
+                <Badge variant="secondary" className="whitespace-nowrap">{getDisplayCategoryLabel(group.category)}</Badge>
             </div>
           </div>
           <CardDescription className="pt-2 line-clamp-3">{group.description}</CardDescription>
