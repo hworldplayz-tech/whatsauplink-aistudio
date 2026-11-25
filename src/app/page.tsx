@@ -13,6 +13,7 @@ import { Suspense } from 'react';
 import { FaqSection, getHomeFaqs } from '@/components/seo/faq-section';
 
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES } from '@/lib/constants';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 // Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
@@ -76,19 +77,27 @@ export default async function Home() {
     console.error('Notice: Error loading home settings:', err);
   }
 
-  // Fetch all groups on the server safely with try/catch fallback
+  // Fetch groups on the server (VPS SQLite primary, Firestore fallback)
   let allGroups: any[] = [];
   try {
-    const db = getFirestoreInstance();
-    const groupsQuery = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
-    const groupSnapshot = await getDocs(groupsQuery);
-    allGroups = groupSnapshot.docs.map(g => {
-      const group = mapDocToGroupLink(g);
-      group.showClicks = settings.showClicks; // Ensure global setting is applied
-      return group;
-    });
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ limit: 500, sort: 'newest' });
+      allGroups = res.groups.map((group) => ({
+        ...group,
+        showClicks: settings.showClicks,
+      }));
+    } else {
+      const db = getFirestoreInstance();
+      const groupsQuery = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
+      const groupSnapshot = await getDocs(groupsQuery);
+      allGroups = groupSnapshot.docs.map(g => {
+        const group = mapDocToGroupLink(g);
+        group.showClicks = settings.showClicks; // Ensure global setting is applied
+        return group;
+      });
+    }
   } catch (error) {
-    console.warn('Notice: Could not load groups from Firestore during SSR, returning empty list for client hydration:', error);
+    console.warn('Notice: Could not load groups during SSR, returning empty list:', error instanceof Error ? error.message : error);
     allGroups = [];
   }
 

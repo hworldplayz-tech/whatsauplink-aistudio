@@ -1,0 +1,14 @@
+{
+  "name": "groupsor-vps-db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "migrate": "node migrate-from-firebase.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "firebase": "^11.9.1"
+  }
+}

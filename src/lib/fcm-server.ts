@@ -1,5 +1,12 @@
 import crypto from 'crypto';
 import { firebaseConfig } from '@/firebase/config';
+import {
+  isVpsDbEnabled,
+  vpsListPushSubscriptions,
+  vpsPrunePushTokens,
+  vpsRegisterPushToken,
+  vpsUnregisterPushToken,
+} from '@/lib/vps-db';
 
 const COLLECTION_NAME = 'push_subscriptions';
 const TOKEN_REGEX = /^[A-Za-z0-9_:-]{50,4096}$/;
@@ -114,11 +121,17 @@ async function getGoogleAccessToken(): Promise<string> {
 }
 
 export async function registerPushToken(token: string): Promise<void> {
-  if (!isFcmConfigured()) return;
   const cleanToken = token.trim();
   if (!isValidFcmToken(cleanToken)) {
     throw new Error('Invalid FCM token format.');
   }
+
+  if (isVpsDbEnabled()) {
+    await vpsRegisterPushToken(cleanToken);
+    return;
+  }
+
+  if (!isFcmConfigured()) return;
 
   const { projectId } = getServiceAccountConfig();
   const accessToken = await getGoogleAccessToken();
@@ -149,9 +162,15 @@ export async function registerPushToken(token: string): Promise<void> {
 }
 
 export async function unregisterPushToken(token: string): Promise<void> {
-  if (!isFcmConfigured()) return;
   const cleanToken = token.trim();
   if (!isValidFcmToken(cleanToken)) return;
+
+  if (isVpsDbEnabled()) {
+    await vpsUnregisterPushToken(cleanToken).catch(() => {});
+    return;
+  }
+
+  if (!isFcmConfigured()) return;
 
   const { projectId } = getServiceAccountConfig();
   const accessToken = await getGoogleAccessToken();
@@ -167,7 +186,7 @@ export async function unregisterPushToken(token: string): Promise<void> {
   }).catch(() => {});
 }
 
-async function listPushSubscriptions(
+async function listFirestorePushSubscriptions(
   projectId: string,
   accessToken: string
 ): Promise<Array<{ docName: string; token: string }>> {
@@ -241,7 +260,11 @@ export async function sendNewGroupPushNotification(input: {
 
   const { projectId } = getServiceAccountConfig();
   const accessToken = await getGoogleAccessToken();
-  const subscribers = await listPushSubscriptions(projectId, accessToken);
+
+  const useVpsStorage = isVpsDbEnabled();
+  const subscribers = useVpsStorage
+    ? (await vpsListPushSubscriptions()).map((s) => ({ docName: s.id, token: s.token }))
+    : await listFirestorePushSubscriptions(projectId, accessToken);
 
   if (subscribers.length === 0) {
     return { sent: 0, failed: 0, pruned: 0 };
@@ -267,7 +290,7 @@ export async function sendNewGroupPushNotification(input: {
 
   let sent = 0;
   let failed = 0;
-  const staleDocNames: string[] = [];
+  const staleSubs: Array<{ docName: string; token: string }> = [];
 
   for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
     const chunk = subscribers.slice(i, i + BATCH_SIZE);
@@ -316,23 +339,27 @@ export async function sendNewGroupPushNotification(input: {
           errBody.includes('UNREGISTERED') ||
           errBody.includes('not a valid FCM registration token')
         ) {
-          staleDocNames.push(sub.docName);
+          staleSubs.push(sub);
         }
       })
     );
   }
 
-  if (staleDocNames.length > 0) {
-    await Promise.allSettled(
-      staleDocNames.map((docName) =>
-        fetch(`https://firestore.googleapis.com/v1/${docName}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${accessToken}` },
-          cache: 'no-store',
-        })
-      )
-    );
+  if (staleSubs.length > 0) {
+    if (useVpsStorage) {
+      await vpsPrunePushTokens(staleSubs.map((s) => s.token)).catch(() => {});
+    } else {
+      await Promise.allSettled(
+        staleSubs.map((s) =>
+          fetch(`https://firestore.googleapis.com/v1/${s.docName}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken}` },
+            cache: 'no-store',
+          })
+        )
+      );
+    }
   }
 
-  return { sent, failed, pruned: staleDocNames.length };
+  return { sent, failed, pruned: staleSubs.length };
 }

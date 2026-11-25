@@ -11,6 +11,7 @@ import { mapDocToGroupLink } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 type Props = {
   params: Promise<{ tag: string }>;
@@ -79,36 +80,44 @@ export default async function TagPage({ params }: Props) {
     console.warn('Notice: Error loading tag settings:', err);
   }
 
-  const db = getFirestoreInstance();
   let allGroups: any[] = [];
   try {
-    const groupsQuery = query(
-      collection(db, 'groups'), 
-      where('tags', 'array-contains', firstTag)
-    );
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ tag: tags.join('+'), limit: 500, sort: 'newest' });
+      allGroups = res.groups.map((g) => ({
+        ...g,
+        showClicks: settings.showClicks,
+      }));
+    } else {
+      const db = getFirestoreInstance();
+      const groupsQuery = query(
+        collection(db, 'groups'), 
+        where('tags', 'array-contains', firstTag)
+      );
 
-    const groupSnapshot = await getDocs(groupsQuery);
-    
-    // Filter for any additional tags in memory.
-    allGroups = groupSnapshot.docs.map(g => {
-      const group = mapDocToGroupLink(g);
-      group.showClicks = settings.showClicks; // Ensure global setting is applied
-      return group;
-    }).filter(group => {
-      // If there's more than one tag, ensure the group has all of them.
-      if (tags.length > 1) {
-        const groupTagsLower = group.tags.map(t => t.toLowerCase());
-        return tags.every(t => groupTagsLower.includes(t));
-      }
-      return true; // If only one tag, it's already filtered by the query.
-    }).sort((a, b) => {
-      // Sort manually after fetching
-      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-      return dateB - dateA;
-    });
+      const groupSnapshot = await getDocs(groupsQuery);
+      
+      // Filter for any additional tags in memory.
+      allGroups = groupSnapshot.docs.map(g => {
+        const group = mapDocToGroupLink(g);
+        group.showClicks = settings.showClicks; // Ensure global setting is applied
+        return group;
+      }).filter(group => {
+        // If there's more than one tag, ensure the group has all of them.
+        if (tags.length > 1) {
+          const groupTagsLower = group.tags.map(t => t.toLowerCase());
+          return tags.every(t => groupTagsLower.includes(t));
+        }
+        return true; // If only one tag, it's already filtered by the query.
+      }).sort((a, b) => {
+        // Sort manually after fetching
+        const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+        const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
   } catch (err) {
-    console.error('Error fetching tag groups:', err);
+    console.warn('Error fetching tag groups:', err instanceof Error ? err.message : err);
     allGroups = [];
   }
 

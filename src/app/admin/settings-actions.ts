@@ -7,6 +7,7 @@ import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
+import { invalidateCachedKey } from '@/lib/settings-cache';
 
 // Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
@@ -65,7 +66,8 @@ export async function saveModerationSettings(formData: FormData): Promise<{ succ
         const settingsDocRef = doc(db, 'settings', 'moderation');
         // Use setDoc with merge to ensure the document is created if it doesn't exist
         await setDoc(settingsDocRef, validatedFields.data, { merge: true });
-        
+        invalidateCachedKey('settings:moderation');
+
         revalidatePath('/admin');
         revalidatePath('/');
         

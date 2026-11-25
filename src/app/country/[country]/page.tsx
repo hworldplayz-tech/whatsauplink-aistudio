@@ -15,6 +15,7 @@ import { FaqSection, getCountryFaqs } from '@/components/seo/faq-section';
 import { resolveCountryCode, getCitiesForCountry } from '@/lib/constants';
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 type Props = {
   params: Promise<{ country: string }>;
@@ -104,24 +105,32 @@ export default async function CountryPage({ params }: Props) {
 
   let allGroups: any[] = [];
   try {
-    const db = getFirestoreInstance();
-    // Query by resolved countryCode
-    const groupsQuery = query(
-      collection(db, 'groups'), 
-      where('country', '==', countryCode)
-    );
-    const groupSnapshot = await getDocs(groupsQuery);
-    allGroups = groupSnapshot.docs.map(g => {
-      const group = mapDocToGroupLink(g);
-      group.showClicks = settings.showClicks;
-      return group;
-    }).sort((a, b) => {
-      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-      return dateB - dateA;
-    });
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ country: countryCode, limit: 500, sort: 'newest' });
+      allGroups = res.groups.map((g) => ({
+        ...g,
+        showClicks: settings.showClicks,
+      }));
+    } else {
+      const db = getFirestoreInstance();
+      // Query by resolved countryCode
+      const groupsQuery = query(
+        collection(db, 'groups'), 
+        where('country', '==', countryCode)
+      );
+      const groupSnapshot = await getDocs(groupsQuery);
+      allGroups = groupSnapshot.docs.map(g => {
+        const group = mapDocToGroupLink(g);
+        group.showClicks = settings.showClicks;
+        return group;
+      }).sort((a, b) => {
+        const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+        const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
   } catch (err) {
-    console.error('Error fetching country groups:', err);
+    console.warn('Error fetching country groups:', err instanceof Error ? err.message : err);
     allGroups = [];
   }
 

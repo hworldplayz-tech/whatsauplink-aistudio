@@ -17,6 +17,15 @@ import { revalidatePath } from 'next/cache';
 import { differenceInMilliseconds } from 'date-fns';
 import { cookies } from 'next/headers';
 import { sendNewGroupPushNotification } from '@/lib/fcm-server';
+import {
+  isVpsDbEnabled,
+  vpsCreateOrUpsertGroup,
+  vpsCreateReport,
+  vpsGetGroupByLink,
+  vpsSubmitRating,
+  vpsUpdateGroup,
+  vpsVoteWorking,
+} from '@/lib/vps-db';
 
 // Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
@@ -182,11 +191,23 @@ export async function reportGroup(formData: FormData): Promise<{ success: boolea
   const { groupId, groupTitle, reason, otherReason } = validatedFields.data;
 
   try {
-    const db = getFirestoreInstance();
-    const reportsCollection = collection(db, 'reports');
-    
     // Combine reason and otherReason if 'Other' is selected.
     const finalReason = reason === 'Other' ? `Other: ${otherReason}` : reason;
+
+    if (isVpsDbEnabled()) {
+      await vpsCreateReport({
+        groupId,
+        groupTitle,
+        reason: finalReason,
+      });
+      return {
+        success: true,
+        message: `Thank you for your report. We will review "${groupTitle}" shortly.`,
+      };
+    }
+
+    const db = getFirestoreInstance();
+    const reportsCollection = collection(db, 'reports');
 
     const reportData: Omit<Report, 'id' | 'createdAt'> = {
       groupId,
@@ -233,6 +254,16 @@ export async function voteLinkWorking(
 ): Promise<{ success: boolean; message: string }> {
   if (!groupId) return { success: false, message: 'Invalid group ID' };
   try {
+    if (isVpsDbEnabled()) {
+      await vpsVoteWorking(groupId, isWorking);
+      return {
+        success: true,
+        message: isWorking
+          ? 'Thank you! Marked as active and working.'
+          : 'Feedback noted. Thank you!',
+      };
+    }
+
     const db = getFirestoreInstance();
     const groupRef = doc(db, 'groups', groupId);
     if (isWorking) {
@@ -370,16 +401,105 @@ export async function submitGroup(
   const isUpdate = !!groupId;
 
   try {
-    const db = getFirestoreInstance();
     const tags = sanitizeAndLimitTags(groupData.tags);
-    
+    const moderationSettings = await getModerationSettings();
+
+    if (isVpsDbEnabled()) {
+      const existingGroup = !isUpdate ? await vpsGetGroupByLink(groupData.link) : null;
+
+      if (existingGroup && !isUpdate) {
+        if (moderationSettings.cooldownEnabled && existingGroup.lastSubmittedAt) {
+          const lastSubmissionDate = new Date(existingGroup.lastSubmittedAt);
+          const diff = Date.now() - lastSubmissionDate.getTime();
+
+          let cooldownPeriod = 0;
+          switch (moderationSettings.cooldownUnit) {
+            case 'hours':
+              cooldownPeriod = moderationSettings.cooldownValue * 60 * 60 * 1000;
+              break;
+            case 'days':
+              cooldownPeriod = moderationSettings.cooldownValue * 24 * 60 * 60 * 1000;
+              break;
+            case 'months':
+              cooldownPeriod = moderationSettings.cooldownValue * 30 * 24 * 60 * 60 * 1000;
+              break;
+          }
+
+          if (diff < cooldownPeriod) {
+            const timeLeft = Math.ceil((cooldownPeriod - diff) / (1000 * 60 * 60));
+            return {
+              message: `This group was submitted recently. Please wait about ${timeLeft} more hour(s) before submitting again.`,
+              success: false,
+            };
+          }
+        }
+
+        await vpsUpdateGroup(existingGroup.id, {
+          ...groupData,
+          tags,
+          bumpSubmissionCount: true,
+          bumpLastSubmittedAt: true,
+        });
+
+        revalidatePath('/');
+        revalidatePath(`/group/invite/${existingGroup.id}`);
+        return {
+          message: 'Group re-submitted successfully!',
+          success: true,
+          newGroupId: existingGroup.id,
+        };
+      }
+
+      if (isUpdate && groupId) {
+        await vpsUpdateGroup(groupId, {
+          ...groupData,
+          tags,
+        });
+        revalidatePath('/admin');
+        revalidatePath('/');
+        revalidatePath(`/group/invite/${groupId}`);
+        return {
+          message: 'Group updated successfully!',
+          success: true,
+          newGroupId: groupId,
+        };
+      }
+
+      const created = await vpsCreateOrUpsertGroup({
+        ...groupData,
+        tags,
+        clicks: 0,
+        submissionCount: 1,
+        featured: false,
+        totalRating: 0,
+        ratingCount: 0,
+      });
+
+      await sendNewGroupPushNotification({
+        groupId: created.id,
+        title: created.title,
+        type: created.type,
+        imageUrl: created.imageUrl,
+      }).catch((err) => {
+        console.error('Background push send error (submit):', err);
+      });
+
+      revalidatePath('/');
+      revalidatePath(`/group/invite/${created.id}`);
+      return {
+        message: 'Your group has been submitted successfully!',
+        success: true,
+        newGroupId: created.id,
+      };
+    }
+
+    const db = getFirestoreInstance();
+
     // Check for existing group link
     const groupsRef = collection(db, "groups");
     const q = query(groupsRef, where("link", "==", groupData.link), limit(1));
     const existingGroupSnapshot = await getDocs(q);
     const existingGroupDoc = existingGroupSnapshot.docs[0];
-
-    const moderationSettings = await getModerationSettings();
 
     // Cooldown logic
     if (existingGroupDoc && !isUpdate) { // Only apply cooldown for new submissions, not admin edits
@@ -468,7 +588,7 @@ export async function submitGroup(
     }
 
   } catch (error) {
-    console.error('Firestore submission error:', error);
+    console.error('Submission error:', error);
     return { message: 'An unexpected error occurred. Please try again.', success: false };
   }
 }
@@ -498,30 +618,34 @@ export async function submitRating(formData: FormData): Promise<{ success: boole
     }
     
     try {
-        const db = getFirestoreInstance();
-        const groupRef = doc(db, 'groups', groupId);
-
         let newAverage = 0;
-        
-        await runTransaction(db, async (transaction) => {
-            const groupDoc = await transaction.get(groupRef);
-            if (!groupDoc.exists()) {
-                throw new Error("Group not found!");
-            }
-            
-            const groupData = groupDoc.data();
-            const currentTotalRating = groupData.totalRating || 0;
-            const currentRatingCount = groupData.ratingCount || 0;
 
-            const newTotalRating = currentTotalRating + rating;
-            const newRatingCount = currentRatingCount + 1;
-            newAverage = newTotalRating / newRatingCount;
+        if (isVpsDbEnabled()) {
+            newAverage = await vpsSubmitRating(groupId, rating);
+        } else {
+            const db = getFirestoreInstance();
+            const groupRef = doc(db, 'groups', groupId);
 
-            transaction.update(groupRef, {
-                totalRating: newTotalRating,
-                ratingCount: newRatingCount,
+            await runTransaction(db, async (transaction) => {
+                const groupDoc = await transaction.get(groupRef);
+                if (!groupDoc.exists()) {
+                    throw new Error("Group not found!");
+                }
+                
+                const groupData = groupDoc.data();
+                const currentTotalRating = groupData.totalRating || 0;
+                const currentRatingCount = groupData.ratingCount || 0;
+
+                const newTotalRating = currentTotalRating + rating;
+                const newRatingCount = currentRatingCount + 1;
+                newAverage = newTotalRating / newRatingCount;
+
+                transaction.update(groupRef, {
+                    totalRating: newTotalRating,
+                    ratingCount: newRatingCount,
+                });
             });
-        });
+        }
 
         // Set cookie after successful transaction
         ratedGroups.push(groupId);

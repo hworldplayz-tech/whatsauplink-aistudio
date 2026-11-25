@@ -13,6 +13,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BreadcrumbItem } from '@/components/layout/breadcrumbs';
 import { FaqSection, getCategoryFaqs } from '@/components/seo/faq-section';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 type Props = {
   params: Promise<{ category: string }>;
@@ -96,25 +97,33 @@ export default async function CategoryPage({ params }: Props) {
 
   let allGroups: any[] = [];
   try {
-    const db = getFirestoreInstance();
-    // Remove orderby from query to avoid needing a composite index
-    const groupsQuery = query(
-      collection(db, 'groups'), 
-      where('category', '==', category)
-    );
-    const groupSnapshot = await getDocs(groupsQuery);
-    allGroups = groupSnapshot.docs.map(g => {
-      const group = mapDocToGroupLink(g);
-      group.showClicks = settings.showClicks; // Ensure global setting is applied
-      return group;
-    }).sort((a, b) => {
-      // Sort manually after fetching
-      const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-      const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-      return dateB - dateA;
-    });
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ category, limit: 500, sort: 'newest' });
+      allGroups = res.groups.map((g) => ({
+        ...g,
+        showClicks: settings.showClicks,
+      }));
+    } else {
+      const db = getFirestoreInstance();
+      // Remove orderby from query to avoid needing a composite index
+      const groupsQuery = query(
+        collection(db, 'groups'), 
+        where('category', '==', category)
+      );
+      const groupSnapshot = await getDocs(groupsQuery);
+      allGroups = groupSnapshot.docs.map(g => {
+        const group = mapDocToGroupLink(g);
+        group.showClicks = settings.showClicks; // Ensure global setting is applied
+        return group;
+      }).sort((a, b) => {
+        // Sort manually after fetching
+        const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+        const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
   } catch (err) {
-    console.error('Error fetching category groups:', err);
+    console.warn('Error fetching category groups:', err instanceof Error ? err.message : err);
     allGroups = [];
   }
 

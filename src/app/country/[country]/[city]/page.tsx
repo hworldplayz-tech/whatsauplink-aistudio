@@ -20,6 +20,7 @@ import {
 } from '@/lib/constants';
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 type Props = {
   params: Promise<{ country: string; city: string }>;
@@ -132,24 +133,33 @@ export default async function CityCountryPage({ params }: Props) {
 
   let allGroups: GroupLink[] = [];
   try {
-    const db = getFirestoreInstance();
-    // Fetch groups belonging to this country code
-    const groupsQuery = query(
-      collection(db, 'groups'),
-      where('country', '==', countryCode)
-    );
-    const groupSnapshot = await getDocs(groupsQuery);
-    const countryGroups: GroupLink[] = groupSnapshot.docs
-      .map((g) => {
-        const group = mapDocToGroupLink(g);
-        group.showClicks = settings.showClicks;
-        return group;
-      })
-      .sort((a, b) => {
-        const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-        const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-        return dateB - dateA;
-      });
+    let countryGroups: GroupLink[] = [];
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ country: countryCode, limit: 500, sort: 'newest' });
+      countryGroups = res.groups.map((g) => ({
+        ...g,
+        showClicks: settings.showClicks,
+      }));
+    } else {
+      const db = getFirestoreInstance();
+      // Fetch groups belonging to this country code
+      const groupsQuery = query(
+        collection(db, 'groups'),
+        where('country', '==', countryCode)
+      );
+      const groupSnapshot = await getDocs(groupsQuery);
+      countryGroups = groupSnapshot.docs
+        .map((g) => {
+          const group = mapDocToGroupLink(g);
+          group.showClicks = settings.showClicks;
+          return group;
+        })
+        .sort((a, b) => {
+          const dateA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+          const dateB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+          return dateB - dateA;
+        });
+    }
 
     // Check for city keyword matches
     const cityLower = cityName.toLowerCase();

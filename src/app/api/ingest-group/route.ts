@@ -21,6 +21,16 @@ import {
 import { firebaseConfig } from '@/firebase/config';
 import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES, DEFAULT_LANGUAGES } from '@/lib/constants';
 import { sendNewGroupPushNotification } from '@/lib/fcm-server';
+import {
+  isVpsDbEnabled,
+  vpsCreateOrUpsertGroup,
+  vpsGetCategories,
+  vpsGetCountries,
+  vpsGetGroupByLink,
+  vpsSaveCategory,
+  vpsSaveCountry,
+} from '@/lib/vps-db';
+import { invalidateCachedKey } from '@/lib/settings-cache';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -433,18 +443,32 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const db = getFirestoreInstance();
-    const groupsRef = collection(db, 'groups');
+    const useVpsDb = isVpsDbEnabled();
 
-    // Duplicate check by normalized WhatsApp link
-    const existingSnap = await getDocs(query(groupsRef, where('link', '==', linkCheck.normalizedUrl), limit(1)));
-    if (!existingSnap.empty) {
-      return NextResponse.json({
-        success: true,
-        status: 'skipped',
-        reason: 'already_exists',
-        groupId: existingSnap.docs[0].id,
-      });
+    if (useVpsDb) {
+      const existing = await vpsGetGroupByLink(linkCheck.normalizedUrl);
+      if (existing) {
+        return NextResponse.json({
+          success: true,
+          status: 'skipped',
+          reason: 'already_exists',
+          groupId: existing.id,
+        });
+      }
+    } else {
+      const db = getFirestoreInstance();
+      const groupsRef = collection(db, 'groups');
+
+      // Duplicate check by normalized WhatsApp link
+      const existingSnap = await getDocs(query(groupsRef, where('link', '==', linkCheck.normalizedUrl), limit(1)));
+      if (!existingSnap.empty) {
+        return NextResponse.json({
+          success: true,
+          status: 'skipped',
+          reason: 'already_exists',
+          groupId: existingSnap.docs[0].id,
+        });
+      }
     }
 
     // Fetch live WhatsApp metadata (safe because linkCheck.normalizedUrl is strictly WhatsApp host)
@@ -511,8 +535,58 @@ export async function POST(req: NextRequest) {
       fallbackImageUrl ||
       '/groupsor_logo.png';
 
-    const categoryResult = await ensureCategoryExists(db, input.category || 'community');
-    const countryResult = await ensureCountryExists(db, input.country || 'other');
+    let categoryResult: { value: string; label: string; created: boolean };
+    let countryResult: { value: string; label: string; created: boolean };
+
+    if (useVpsDb) {
+      const rawCatInput = input.category || 'community';
+      const rawCatSlug = slugify(rawCatInput) || 'other';
+      const catAlias = CATEGORY_ALIASES[rawCatSlug];
+      const catDefault = DEFAULT_CATEGORIES.find(
+        (c) => c.value === rawCatSlug || slugify(c.label) === rawCatSlug
+      );
+      const resolvedCatValue = catAlias?.value || catDefault?.value || rawCatSlug;
+      const resolvedCatLabel =
+        catAlias?.label ||
+        catDefault?.label ||
+        (rawCatInput.trim().length >= 2 ? rawCatInput.trim().slice(0, 48) : toTitleLabel(resolvedCatValue));
+
+      const existingCats = await vpsGetCategories();
+      const existingCat = existingCats.find((c) => c.value === resolvedCatValue);
+      if (!existingCat) {
+        await vpsSaveCategory(resolvedCatValue, resolvedCatLabel);
+        invalidateCachedKey('vps:categories');
+        categoryResult = { value: resolvedCatValue, label: resolvedCatLabel, created: true };
+      } else {
+        categoryResult = { value: resolvedCatValue, label: existingCat.label || resolvedCatLabel, created: false };
+      }
+
+      const rawCountryInput = input.country || 'other';
+      const rawCountrySlug = slugify(rawCountryInput) || 'other';
+      const countryAlias = COUNTRY_NAME_TO_CODE[rawCountrySlug];
+      const countryDefault = DEFAULT_COUNTRIES.find(
+        (c) => c.value === rawCountrySlug || slugify(c.label) === rawCountrySlug
+      );
+      const resolvedCountryValue = countryAlias?.value || countryDefault?.value || rawCountrySlug;
+      const resolvedCountryLabel =
+        countryAlias?.label ||
+        countryDefault?.label ||
+        (rawCountryInput.trim().length >= 2 ? rawCountryInput.trim().slice(0, 48) : toTitleLabel(resolvedCountryValue));
+
+      const existingCountries = await vpsGetCountries();
+      const existingCountry = existingCountries.find((c) => c.value === resolvedCountryValue);
+      if (!existingCountry) {
+        await vpsSaveCountry(resolvedCountryValue, resolvedCountryLabel);
+        invalidateCachedKey('vps:countries');
+        countryResult = { value: resolvedCountryValue, label: resolvedCountryLabel, created: true };
+      } else {
+        countryResult = { value: resolvedCountryValue, label: existingCountry.label || resolvedCountryLabel, created: false };
+      }
+    } else {
+      const db = getFirestoreInstance();
+      categoryResult = await ensureCategoryExists(db, input.category || 'community');
+      countryResult = await ensureCountryExists(db, input.country || 'other');
+    }
 
     const rawLang = slugify(input.language || 'en');
     const validLangValues = new Set(DEFAULT_LANGUAGES.map((l) => l.value));
@@ -532,34 +606,62 @@ export async function POST(req: NextRequest) {
       .replace(/[^a-z0-9\s]/g, '')
       .trim();
 
-    const newGroup = {
-      title: finalTitle,
-      description: finalDescription,
-      link: linkCheck.normalizedUrl,
-      imageUrl: finalImageUrl,
-      imageHint: imageHint || 'whatsapp group',
-      category: categoryResult.value,
-      country: countryResult.value,
-      language: finalLanguage,
-      type: input.type || linkCheck.typeHint,
-      tags: finalTags,
-      featured: false,
-      clicks: 0,
-      submissionCount: 1,
-      totalRating: 0,
-      ratingCount: 0,
-      isVerified: Boolean(waTitle || waImageUrl),
-      status: 'active',
-      createdAt: serverTimestamp(),
-      lastSubmittedAt: serverTimestamp(),
-    };
+    let createdId = '';
+    const finalType = input.type || linkCheck.typeHint;
 
-    const docRef = await addDoc(groupsRef, newGroup);
+    if (useVpsDb) {
+      const created = await vpsCreateOrUpsertGroup({
+        title: finalTitle,
+        description: finalDescription,
+        link: linkCheck.normalizedUrl,
+        imageUrl: finalImageUrl,
+        imageHint: imageHint || 'whatsapp group',
+        category: categoryResult.value,
+        country: countryResult.value,
+        language: finalLanguage,
+        type: finalType,
+        tags: finalTags,
+        featured: false,
+        clicks: 0,
+        submissionCount: 1,
+        totalRating: 0,
+        ratingCount: 0,
+        isVerified: Boolean(waTitle || waImageUrl),
+        status: 'active',
+      });
+      createdId = created.id;
+    } else {
+      const db = getFirestoreInstance();
+      const groupsRef = collection(db, 'groups');
+      const newGroup = {
+        title: finalTitle,
+        description: finalDescription,
+        link: linkCheck.normalizedUrl,
+        imageUrl: finalImageUrl,
+        imageHint: imageHint || 'whatsapp group',
+        category: categoryResult.value,
+        country: countryResult.value,
+        language: finalLanguage,
+        type: finalType,
+        tags: finalTags,
+        featured: false,
+        clicks: 0,
+        submissionCount: 1,
+        totalRating: 0,
+        ratingCount: 0,
+        isVerified: Boolean(waTitle || waImageUrl),
+        status: 'active',
+        createdAt: serverTimestamp(),
+        lastSubmittedAt: serverTimestamp(),
+      };
+      const docRef = await addDoc(groupsRef, newGroup);
+      createdId = docRef.id;
+    }
 
     await sendNewGroupPushNotification({
-      groupId: docRef.id,
+      groupId: createdId,
       title: finalTitle,
-      type: newGroup.type,
+      type: finalType,
       imageUrl: finalImageUrl,
     }).catch((err) => {
       console.error('Background push send error (ingest):', err);
@@ -568,13 +670,13 @@ export async function POST(req: NextRequest) {
     revalidatePath('/');
     revalidatePath(`/category/${categoryResult.value}`);
     revalidatePath(`/country/${countryResult.value}`);
-    revalidatePath(`/group/invite/${docRef.id}`);
+    revalidatePath(`/group/invite/${createdId}`);
     revalidatePath('/sitemap.xml');
 
     return NextResponse.json({
       success: true,
       status: 'created',
-      groupId: docRef.id,
+      groupId: createdId,
       title: finalTitle,
       category: categoryResult,
       country: countryResult,

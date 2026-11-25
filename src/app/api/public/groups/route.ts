@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, query, where, orderBy, limit as fsLimit } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
-import { mapDocToGroupLink } from '@/lib/data';
+import { mapDocToGroupLink, type GroupLink } from '@/lib/data';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -58,50 +59,67 @@ export async function GET(req: NextRequest) {
     const rawPage = Number(searchParams.get('page') || 1);
     const page = Number.isFinite(rawPage) ? Math.max(1, Math.min(50, Math.floor(rawPage))) : 1;
 
-    const db = getFirestoreInstance();
-    const groupsCol = collection(db, 'groups');
+    let pagedItems: GroupLink[] = [];
+    let hasMore = false;
 
-    const constraints: any[] = [];
-    if (category && category !== 'all') {
-      constraints.push(where('category', '==', category));
-    }
-    if (country && country !== 'all') {
-      constraints.push(where('country', '==', country));
-    }
-    if (typeParam && (typeParam === 'group' || typeParam === 'channel' || typeParam === 'community')) {
-      constraints.push(where('type', '==', typeParam));
-    }
-
-    const fetchWindow = Math.min(300, Math.max(80, page * limitCount + 25));
-
-    let snapshot;
-    if (constraints.length === 0) {
-      snapshot = await getDocs(query(groupsCol, orderBy('lastSubmittedAt', 'desc'), fsLimit(fetchWindow)));
-    } else {
-      // Avoid composite index errors by filtering in Firestore and sorting in memory
-      snapshot = await getDocs(query(groupsCol, ...constraints, fsLimit(fetchWindow)));
-    }
-
-    let items = snapshot.docs.map(mapDocToGroupLink);
-
-    // Sort newest first
-    items.sort((a, b) => {
-      const tA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
-      const tB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
-      return tB - tA;
-    });
-
-    // Optional keyword search
-    if (searchQ) {
-      items = items.filter((g) => {
-        const hay = `${g.title} ${g.description} ${(g.tags || []).join(' ')} ${g.category}`.toLowerCase();
-        return hay.includes(searchQ);
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({
+        category: category || undefined,
+        country: country || undefined,
+        type: typeParam || undefined,
+        q: searchQ || undefined,
+        page,
+        limit: limitCount,
+        sort: 'newest',
       });
-    }
+      pagedItems = res.groups;
+      hasMore = res.hasMore;
+    } else {
+      const db = getFirestoreInstance();
+      const groupsCol = collection(db, 'groups');
 
-    const startIndex = (page - 1) * limitCount;
-    const pagedItems = items.slice(startIndex, startIndex + limitCount);
-    const hasMore = items.length > startIndex + limitCount;
+      const constraints: any[] = [];
+      if (category && category !== 'all') {
+        constraints.push(where('category', '==', category));
+      }
+      if (country && country !== 'all') {
+        constraints.push(where('country', '==', country));
+      }
+      if (typeParam && (typeParam === 'group' || typeParam === 'channel' || typeParam === 'community')) {
+        constraints.push(where('type', '==', typeParam));
+      }
+
+      const fetchWindow = Math.min(300, Math.max(80, page * limitCount + 25));
+
+      let snapshot;
+      if (constraints.length === 0) {
+        snapshot = await getDocs(query(groupsCol, orderBy('lastSubmittedAt', 'desc'), fsLimit(fetchWindow)));
+      } else {
+        // Avoid composite index errors by filtering in Firestore and sorting in memory
+        snapshot = await getDocs(query(groupsCol, ...constraints, fsLimit(fetchWindow)));
+      }
+
+      let items = snapshot.docs.map(mapDocToGroupLink);
+
+      // Sort newest first
+      items.sort((a, b) => {
+        const tA = a.lastSubmittedAt ? new Date(a.lastSubmittedAt).getTime() : 0;
+        const tB = b.lastSubmittedAt ? new Date(b.lastSubmittedAt).getTime() : 0;
+        return tB - tA;
+      });
+
+      // Optional keyword search
+      if (searchQ) {
+        items = items.filter((g) => {
+          const hay = `${g.title} ${g.description} ${(g.tags || []).join(' ')} ${g.category}`.toLowerCase();
+          return hay.includes(searchQ);
+        });
+      }
+
+      const startIndex = (page - 1) * limitCount;
+      pagedItems = items.slice(startIndex, startIndex + limitCount);
+      hasMore = items.length > startIndex + limitCount;
+    }
 
     // Strip internal moderation fields & project strictly public widget fields
     const publicGroups = pagedItems.map((g) => ({

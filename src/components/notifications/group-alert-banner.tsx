@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Bell, X } from 'lucide-react';
-import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 import { useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +12,7 @@ const ENABLED_KEY = 'groupsor_alerts_enabled';
 const FCM_TOKEN_KEY = 'groupsor_fcm_token';
 const FCM_SYNCED_AT_KEY = 'groupsor_fcm_synced_at';
 const FCM_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const FOREGROUND_POLL_MS = 60 * 1000;
 const SW_PATH = '/groups-sw.js';
 const SW_SCOPE = '/alerts/';
 const VAPID_KEY = (process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '').trim();
@@ -32,7 +32,7 @@ function getSafeGroupPath(id: string): string {
 
 export function GroupAlertBanner() {
   const pathname = usePathname();
-  const { app, firestore } = useFirestore();
+  const { app } = useFirestore();
   const { toast } = useToast();
 
   const [showBanner, setShowBanner] = useState(false);
@@ -202,59 +202,47 @@ export function GroupAlertBanner() {
     setShowBanner(false);
   }, [ensureSwRegistration, isAdminRoute, syncFcmBackgroundSubscription]);
 
-  // Listen in real time for newly added WhatsApp groups & channels when allowed
+  // Poll edge-cached /api/public/groups while visible (zero Firestore quota used by visitors)
   useEffect(() => {
     if (!alertsEnabled || isAdminRoute) return;
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
-    const hasValidFirestore =
-      firestore && typeof (firestore as { type?: unknown }).type === 'string';
-    if (!hasValidFirestore) return;
-
+    let isMounted = true;
     initializedRef.current = false;
     seenIdsRef.current = new Set();
 
-    const groupsQuery = query(
-      collection(firestore, 'groups'),
-      orderBy('lastSubmittedAt', 'desc'),
-      limit(5)
-    );
-
-    const unsubscribe = onSnapshot(
-      groupsQuery,
-      (snapshot) => {
+    const checkLatestGroups = async () => {
+      if (!isMounted) return;
+      try {
+        const res = await fetch('/api/public/groups?limit=5');
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          groups?: Array<{
+            id?: string;
+            title?: string;
+            type?: string;
+            imageUrl?: string;
+          }>;
+        };
+        const list = Array.isArray(json.groups) ? json.groups : [];
         if (!initializedRef.current) {
-          snapshot.docs.forEach((docSnap) => {
-            seenIdsRef.current.add(docSnap.id);
+          list.forEach((g) => {
+            if (g.id) seenIdsRef.current.add(g.id);
           });
           initializedRef.current = true;
           return;
         }
 
-        const freshDocs = snapshot
-          .docChanges()
-          .filter(
-            (change) =>
-              change.type === 'added' && !seenIdsRef.current.has(change.doc.id)
-          );
-
-        snapshot.docs.forEach((docSnap) => {
-          seenIdsRef.current.add(docSnap.id);
+        const fresh = list.filter((g) => g.id && !seenIdsRef.current.has(g.id));
+        list.forEach((g) => {
+          if (g.id) seenIdsRef.current.add(g.id);
         });
 
-        // Cap notifications per batch to prevent burst spam on reconnect
-        freshDocs.slice(0, 2).forEach((change) => {
-          const data = change.doc.data() as {
-            title?: unknown;
-            type?: unknown;
-            imageUrl?: unknown;
-          };
-          const rawTitle =
-            typeof data.title === 'string' && data.title.trim()
-              ? data.title.trim()
-              : '';
-          const isChannel = data.type === 'channel';
+        fresh.slice(0, 2).forEach((g) => {
+          const groupId = String(g.id || '');
+          const rawTitle = typeof g.title === 'string' ? g.title.trim() : '';
+          const isChannel = g.type === 'channel';
 
           const heading = isChannel
             ? 'New Channel Added in Groupsor! Join Fast'
@@ -268,21 +256,29 @@ export function GroupAlertBanner() {
           void showBrowserNotification({
             title: heading,
             body,
-            url: getSafeGroupPath(change.doc.id),
-            icon: isValidImageUrl(data.imageUrl),
-            tag: `groupsor-new-${change.doc.id}`,
+            url: getSafeGroupPath(groupId),
+            icon: isValidImageUrl(g.imageUrl),
+            tag: `groupsor-new-${groupId}`,
           });
         });
-      },
-      () => {
-        // Silently ignore transient listener errors
+      } catch {
+        // Ignore transient network errors
       }
-    );
+    };
+
+    void checkLatestGroups();
+
+    const timer = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        void checkLatestGroups();
+      }
+    }, FOREGROUND_POLL_MS);
 
     return () => {
-      unsubscribe();
+      isMounted = false;
+      clearInterval(timer);
     };
-  }, [alertsEnabled, firestore, isAdminRoute, showBrowserNotification]);
+  }, [alertsEnabled, isAdminRoute, showBrowserNotification]);
 
   const handleAllow = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;

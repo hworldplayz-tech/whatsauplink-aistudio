@@ -1,9 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
 import {
-  getCricketFirestore,
   fetchCricketOverviewFromRest,
   normalizeCricketOverview,
   parseMatchTeamsAndScores,
@@ -167,10 +165,9 @@ export function CricketProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Subscribe to secondary read-only Firestore document `cricket/overview`
+  // Fetch live cricket overview via edge-cached /api/cricket (eliminates per-visitor Firestore quota usage)
   useEffect(() => {
     let isMounted = true;
-    let unsubscribe: (() => void) | null = null;
 
     const applyOverview = (data: CricketOverview) => {
       if (!isMounted) return;
@@ -185,51 +182,40 @@ export function CricketProvider({ children }: { children: React.ReactNode }) {
       processWatchedUpdates(data);
     };
 
-    try {
-      const db = getCricketFirestore();
-      const docRef = doc(db, 'cricket', 'overview');
-
-      unsubscribe = onSnapshot(
-        docRef,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const normalized = normalizeCricketOverview(snapshot.data());
-            applyOverview(normalized);
-          } else {
-            // Fallback to REST if snapshot empty
-            fetchCricketOverviewFromRest().then((restData) => {
-              if (restData) applyOverview(restData);
-              else if (isMounted) setIsLoading(false);
-            });
+    const loadOverview = async () => {
+      try {
+        const res = await fetch('/api/cricket');
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.overview) {
+            applyOverview(normalizeCricketOverview(json.overview));
+            return;
           }
-        },
-        (err) => {
-          console.warn('Cricket feed onSnapshot error, falling back to REST/cache:', err);
-          fetchCricketOverviewFromRest().then((restData) => {
-            if (restData) {
-              applyOverview(restData);
-            } else if (isMounted) {
-              setError('Unable to reach live cricket feed.');
-              setIsLoading(false);
-            }
-          });
         }
-      );
-    } catch (err) {
-      console.warn('Cricket feed init error, using REST fallback:', err);
-      fetchCricketOverviewFromRest().then((restData) => {
+        const restData = await fetchCricketOverviewFromRest();
         if (restData) {
           applyOverview(restData);
         } else if (isMounted) {
-          setError('Unable to initialize live cricket feed.');
           setIsLoading(false);
         }
-      });
-    }
+      } catch {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadOverview();
+
+    const interval = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        void loadOverview();
+      }
+    }, 60_000);
 
     return () => {
       isMounted = false;
-      if (unsubscribe) unsubscribe();
+      clearInterval(interval);
     };
   }, [processWatchedUpdates]);
 

@@ -4,6 +4,7 @@ import { DEFAULT_CATEGORIES, DEFAULT_COUNTRIES, POPULAR_CITIES_BY_COUNTRY } from
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
+import { isVpsDbEnabled, vpsGetGroups } from '@/lib/vps-db';
 
 function getFirestoreInstance() {
   if (!getApps().length) {
@@ -125,29 +126,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Groups from Firestore
+  // Groups from VPS DB (primary) or Firestore (fallback)
   let groupRoutes: MetadataRoute.Sitemap = [];
   try {
-    const db = getFirestoreInstance();
-    const groupsSnap = await getDocs(query(collection(db, 'groups'), limit(500)));
-    groupRoutes = groupsSnap.docs.map((doc) => {
-      const data = doc.data();
-      let lastMod = now;
-      if (data.lastSubmittedAt) {
-        lastMod = new Date(data.lastSubmittedAt);
-      } else if (data.createdAt?.toDate) {
-        lastMod = data.createdAt.toDate();
-      }
+    if (isVpsDbEnabled()) {
+      const res = await vpsGetGroups({ limit: 1000, sort: 'newest' });
+      groupRoutes = res.groups.map((g) => {
+        const lastModStr = g.lastSubmittedAt || g.createdAt;
+        const parsedDate = lastModStr ? new Date(lastModStr) : now;
+        return {
+          url: `${baseUrl}/group/invite/${g.id}`,
+          lastModified: Number.isNaN(parsedDate.getTime()) ? now : parsedDate,
+          changeFrequency: 'weekly',
+          priority: 0.75,
+        };
+      });
+    } else {
+      const db = getFirestoreInstance();
+      const groupsSnap = await getDocs(query(collection(db, 'groups'), limit(500)));
+      groupRoutes = groupsSnap.docs.map((doc) => {
+        const data = doc.data();
+        let lastMod = now;
+        if (data.lastSubmittedAt) {
+          lastMod = new Date(data.lastSubmittedAt);
+        } else if (data.createdAt?.toDate) {
+          lastMod = data.createdAt.toDate();
+        }
 
-      return {
-        url: `${baseUrl}/group/invite/${doc.id}`,
-        lastModified: isNaN(lastMod.getTime()) ? now : lastMod,
-        changeFrequency: 'weekly',
-        priority: 0.75,
-      };
-    });
+        return {
+          url: `${baseUrl}/group/invite/${doc.id}`,
+          lastModified: isNaN(lastMod.getTime()) ? now : lastMod,
+          changeFrequency: 'weekly',
+          priority: 0.75,
+        };
+      });
+    }
   } catch (err) {
-    console.warn('Notice: Could not fetch all groups for sitemap, using core routes:', err);
+    console.warn('Notice: Could not fetch groups for sitemap, using core routes:', err instanceof Error ? err.message : err);
   }
 
   return [...staticRoutes, ...categoryRoutes, ...countryRoutes, ...cityRoutes, ...groupRoutes];

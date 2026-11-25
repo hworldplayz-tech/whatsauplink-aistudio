@@ -193,74 +193,102 @@ export function mapDocToCountry(doc: DocumentData): Country {
 }
 
 // Fetch group by ID with safe error handling
-export async function getGroupById(firestore: Firestore, id: string | undefined): Promise<GroupLink | undefined> {
-    if (!id) return undefined;
-    
-    try {
-        const [groupDocSnap, settings] = await Promise.all([
-            getDoc(doc(firestore, 'groups', id)),
-            getGlobalModerationSettings() // Fetch global settings
-        ]);
+export async function getGroupById(
+  firestore: Firestore | undefined,
+  id: string | undefined
+): Promise<GroupLink | undefined> {
+  if (!id) return undefined;
 
-        if (groupDocSnap.exists()) {
-            const group = mapDocToGroupLink(groupDocSnap);
-            // Override with the global setting
-            group.showClicks = settings.showClicks;
-            return group;
-        } else {
-            console.log("No such document!");
-            return undefined;
-        }
-    } catch (error) {
-        console.error("Error getting group by ID:", error);
-        return undefined;
+  try {
+    const { isVpsDbEnabled, vpsGetGroupById } = await import('@/lib/vps-db');
+    if (isVpsDbEnabled()) {
+      const [group, settings] = await Promise.all([
+        vpsGetGroupById(id),
+        getGlobalModerationSettings(),
+      ]);
+      if (!group) return undefined;
+      return { ...group, showClicks: settings.showClicks };
     }
+
+    if (!firestore) return undefined;
+
+    const [groupDocSnap, settings] = await Promise.all([
+      getDoc(doc(firestore, 'groups', id)),
+      getGlobalModerationSettings(),
+    ]);
+
+    if (groupDocSnap.exists()) {
+      const group = mapDocToGroupLink(groupDocSnap);
+      group.showClicks = settings.showClicks;
+      return group;
+    }
+    return undefined;
+  } catch (error) {
+    console.warn('Notice: Error getting group by ID:', error instanceof Error ? error.message : error);
+    return undefined;
+  }
 }
 
 // Fetch 4-6 related groups with fallback to country or general active groups
-export async function getRelatedGroups(firestore: Firestore, currentGroup: GroupLink): Promise<GroupLink[]> {
-    if (!currentGroup) return [];
+export async function getRelatedGroups(
+  firestore: Firestore | undefined,
+  currentGroup: GroupLink
+): Promise<GroupLink[]> {
+  if (!currentGroup) return [];
 
-    try {
-        const [categorySnapshot, settings] = await Promise.all([
-            getDocs(query(
-                collection(firestore, 'groups'),
-                where('category', '==', currentGroup.category),
-                where('__name__', '!=', currentGroup.id),
-                limit(6)
-            )),
-            getGlobalModerationSettings()
-        ]);
-
-        const related = categorySnapshot.docs.map(doc => {
-            const group = mapDocToGroupLink(doc);
-            group.showClicks = settings.showClicks;
-            return group;
-        });
-
-        // If fewer than 4 related by category, backfill with same country or recent groups
-        if (related.length < 4) {
-            const existingIds = new Set([currentGroup.id, ...related.map(r => r.id)]);
-            const fallbackSnapshot = await getDocs(query(
-                collection(firestore, 'groups'),
-                where('country', '==', currentGroup.country),
-                limit(6)
-            ));
-
-            fallbackSnapshot.docs.forEach(doc => {
-                if (!existingIds.has(doc.id) && related.length < 6) {
-                    existingIds.add(doc.id);
-                    const group = mapDocToGroupLink(doc);
-                    group.showClicks = settings.showClicks;
-                    related.push(group);
-                }
-            });
-        }
-
-        return related;
-
-    } catch (error) {
-        console.error("Error fetching related groups:", error);
-        return [];
+  try {
+    const { isVpsDbEnabled, vpsGetRelatedGroups } = await import('@/lib/vps-db');
+    if (isVpsDbEnabled()) {
+      const [related, settings] = await Promise.all([
+        vpsGetRelatedGroups(currentGroup.id),
+        getGlobalModerationSettings(),
+      ]);
+      return related.map((g) => ({ ...g, showClicks: settings.showClicks }));
     }
+
+    if (!firestore) return [];
+
+    const [categorySnapshot, settings] = await Promise.all([
+      getDocs(
+        query(
+          collection(firestore, 'groups'),
+          where('category', '==', currentGroup.category),
+          where('__name__', '!=', currentGroup.id),
+          limit(6)
+        )
+      ),
+      getGlobalModerationSettings(),
+    ]);
+
+    const related = categorySnapshot.docs.map((d) => {
+      const group = mapDocToGroupLink(d);
+      group.showClicks = settings.showClicks;
+      return group;
+    });
+
+    if (related.length < 4) {
+      const existingIds = new Set([currentGroup.id, ...related.map((r) => r.id)]);
+      const fallbackSnapshot = await getDocs(
+        query(
+          collection(firestore, 'groups'),
+          where('country', '==', currentGroup.country),
+          limit(6)
+        )
+      );
+
+      fallbackSnapshot.docs.forEach((d) => {
+        if (!existingIds.has(d.id) && related.length < 6) {
+          existingIds.add(d.id);
+          const group = mapDocToGroupLink(d);
+          group.showClicks = settings.showClicks;
+          related.push(group);
+        }
+      });
+    }
+
+    return related;
+  } catch (error) {
+    console.warn('Notice: Error fetching related groups:', error instanceof Error ? error.message : error);
+    return [];
+  }
 }

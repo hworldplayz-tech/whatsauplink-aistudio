@@ -1,56 +1,52 @@
-
 'use server';
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 import type { ModerationSettings } from '@/lib/data';
+import { getCachedValue } from '@/lib/settings-cache';
 
-// Helper function to initialize Firebase on the server
 function getFirestoreInstance() {
-    if (!getApps().length) {
-        initializeApp(firebaseConfig);
-    }
-    return getFirestore(getApp());
+  if (!getApps().length) {
+    initializeApp(firebaseConfig);
+  }
+  return getFirestore(getApp());
 }
 
-export async function getModerationSettings(): Promise<ModerationSettings> {
-    const defaultSettings: ModerationSettings = {
-        cooldownEnabled: true,
-        cooldownValue: 6,
-        cooldownUnit: 'hours',
-        showClicks: true,
-        groupsPerPage: 20,
-        showFeatured: true,
-        featuredGroupsDisplay: 'slider',
-        showNewsletter: false,
-        showDynamicSeoContent: true,
-        showRatings: true,
-        showTicker: true,
-        tickerSpeed: 40,
-        enableCricketWidget: true,
-        cricketWidgetMajorOnly: true,
-        cricketPinnedMatchId: '',
-    };
+const DEFAULT_MODERATION_SETTINGS: ModerationSettings = {
+  cooldownEnabled: true,
+  cooldownValue: 6,
+  cooldownUnit: 'hours',
+  showClicks: true,
+  groupsPerPage: 20,
+  showFeatured: true,
+  featuredGroupsDisplay: 'slider',
+  showNewsletter: false,
+  showDynamicSeoContent: true,
+  showRatings: true,
+  showTicker: true,
+  tickerSpeed: 40,
+  enableCricketWidget: true,
+  cricketWidgetMajorOnly: true,
+  cricketPinnedMatchId: '',
+};
 
-    try {
-        const db = getFirestoreInstance();
-        const settingsDocRef = doc(db, 'settings', 'moderation');
-        const docSnap = await getDoc(settingsDocRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            // Return existing data with defaults for any missing fields
-            return {
-                ...defaultSettings,
-                ...data,
-            };
-        } else {
-            return defaultSettings;
-        }
-    } catch (error) {
-        console.error('Error fetching moderation settings:', error);
-        // Return default settings if not found or on error
-        return defaultSettings;
-    }
+export async function getModerationSettings(): Promise<ModerationSettings> {
+  return getCachedValue<ModerationSettings>(
+    'settings:moderation',
+    async () => {
+      const db = getFirestoreInstance();
+      const settingsDocRef = doc(db, 'settings', 'moderation');
+      const docSnap = await getDoc(settingsDocRef);
+      if (docSnap.exists()) {
+        return {
+          ...DEFAULT_MODERATION_SETTINGS,
+          ...(docSnap.data() as Partial<ModerationSettings>),
+        };
+      }
+      return DEFAULT_MODERATION_SETTINGS;
+    },
+    DEFAULT_MODERATION_SETTINGS
+  );
 }

@@ -6,6 +6,7 @@ import {
   registerPushToken,
   unregisterPushToken,
 } from '@/lib/fcm-server';
+import { isVpsDbEnabled } from '@/lib/vps-db';
 
 const subscribeSchema = z.object({
   token: z.string().min(50).max(4096),
@@ -15,6 +16,7 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     configured: isFcmConfigured(),
+    storage: isVpsDbEnabled() ? 'vps' : 'firestore',
   });
 }
 
@@ -30,7 +32,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isFcmConfigured()) {
+    const vpsReady = isVpsDbEnabled();
+    const fcmReady = isFcmConfigured();
+
+    if (!vpsReady && !fcmReady) {
       return NextResponse.json({
         success: true,
         configured: false,
@@ -42,7 +47,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      configured: true,
+      configured: fcmReady,
+      storage: vpsReady ? 'vps' : 'firestore',
     });
   } catch (error) {
     console.error('Error in POST /api/push/subscribe:', error);
@@ -65,7 +71,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (isFcmConfigured()) {
+    if (isVpsDbEnabled() || isFcmConfigured()) {
       await unregisterPushToken(parsed.data.token);
     }
 

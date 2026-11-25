@@ -174,11 +174,11 @@ export function GroupDetailView({
   };
 
   const handleJoinClick = () => {
-    if (firestore && group.id) {
-      const groupRef = doc(firestore, 'groups', group.id);
-      updateDoc(groupRef, {
-        clicks: increment(1),
-      }).catch(err => console.error("Failed to increment click count", err));
+    if (group.id) {
+      fetch(`/api/groups/${encodeURIComponent(group.id)}/click`, {
+        method: 'POST',
+        keepalive: true,
+      }).catch(() => {});
     }
   };
 

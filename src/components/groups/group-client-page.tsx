@@ -65,41 +65,46 @@ export function GroupClientPage({
     }
   }, [allGroups]);
 
-  // Client-side fallback: fetch active groups if initial allGroups was empty
+  // Client-side fallback: fetch via /api/public/groups if initial allGroups was empty (avoids visitor Firestore reads)
   useEffect(() => {
-    if (groupsList.length === 0) {
+    if (allGroups.length === 0 && groupsList.length === 0) {
       let isMounted = true;
       setIsLoading(true);
-      import('@/firebase/config').then(({ firebaseConfig }) => {
-        import('firebase/app').then(({ initializeApp, getApps, getApp }) => {
-          import('firebase/firestore').then(({ getFirestore, collection, getDocs, query, orderBy }) => {
-            const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-            const db = getFirestore(app);
-            const q = query(collection(db, 'groups'), orderBy('lastSubmittedAt', 'desc'));
-            getDocs(q).then((snapshot) => {
-              if (isMounted) {
-                import('@/lib/data').then(({ mapDocToGroupLink }) => {
-                  const fetched = snapshot.docs.map(doc => {
-                    const group = mapDocToGroupLink(doc);
-                    group.showClicks = initialSettings.showClicks;
-                    return group;
-                  });
-                  setGroupsList(fetched);
-                  setIsLoading(false);
-                });
-              }
-            }).catch(err => {
-              console.warn('Notice: Client-side group fetch fallback error:', err);
-              if (isMounted) setIsLoading(false);
-            });
-          });
+      fetch('/api/public/groups?limit=20')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!isMounted) return;
+          if (data?.groups && Array.isArray(data.groups) && data.groups.length > 0) {
+            const mapped: GroupLink[] = data.groups.map((g: any) => ({
+              id: String(g.id || ''),
+              title: String(g.title || 'Untitled'),
+              description: String(g.description || ''),
+              link: String(g.joinUrl || ''),
+              imageUrl: String(g.imageUrl || '/groupsor_logo.png'),
+              imageHint: '',
+              category: String(g.category || 'community'),
+              country: String(g.country || 'other'),
+              tags: Array.isArray(g.tags) ? g.tags : [],
+              featured: false,
+              createdAt: g.createdAt || null,
+              lastSubmittedAt: g.createdAt || null,
+              type: g.type || 'group',
+              showClicks: initialSettings.showClicks,
+              isVerified: Boolean(g.isVerified),
+            }));
+            setGroupsList(mapped);
+          }
+          setIsLoading(false);
+        })
+        .catch(() => {
+          if (isMounted) setIsLoading(false);
         });
-      });
+
       return () => {
         isMounted = false;
       };
     }
-  }, [groupsList.length, initialSettings.showClicks]);
+  }, [allGroups.length, groupsList.length, initialSettings.showClicks]);
 
   // Update categories and countries if they change
   useEffect(() => {
